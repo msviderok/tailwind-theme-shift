@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import { For, Show, createSignal } from 'solid-js';
+import { CodeJar } from 'codejar';
+import { createEffect, onCleanup, onMount } from 'solid-js';
 import type { ColorToken } from '../lib/parseHslColors';
 
 interface ColorEditorProps {
@@ -48,75 +49,148 @@ function getCharRanges(
 	return segments;
 }
 
+function escapeHtml(text: string) {
+	return text
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#39;');
+}
+
 export function ColorEditor(props: ColorEditorProps) {
-	let textareaRef: HTMLTextAreaElement | undefined;
-	let mirrorRef: HTMLDivElement | undefined;
-	const [scrollTop, setScrollTop] = createSignal(0);
-	const [scrollLeft, setScrollLeft] = createSignal(0);
+	let editorRef!: HTMLDivElement;
+	let jar: ReturnType<typeof CodeJar> | undefined;
+	let lastSyncedValue = '';
 
-	const sharedStyle =
-		'font-mono text-sm leading-relaxed p-3 whitespace-pre-wrap break-words overflow-auto resize-none';
+	const renderHighlightedHtml = (text: string) => {
+		const segments = props.highlight ? getCharRanges(text, props.tokens, props.side) : [{ text }];
 
-	const segments = () => {
-		if (!props.highlight) return null;
-		return getCharRanges(props.value, props.tokens, props.side);
+		return segments
+			.map((seg) => {
+				const chunk = escapeHtml(seg.text);
+				if (!seg.css) return chunk;
+
+				const ring =
+					(seg.oklchL ?? 0) > 0.6
+						? 'inset 0 0 0 1px rgb(0 0 0 / 0.06)'
+						: 'inset 0 0 0 1px rgb(255 255 255 / 0.12)';
+
+				const col = escapeHtml(seg.css);
+				return `<span style="background-color:${col};border-radius:2px;color:contrast-color(${col});box-shadow:${ring}">${chunk}</span>`;
+			})
+			.join('');
 	};
 
-	return (
-		<div class="relative w-full h-full min-h-0">
-			{/* Mirror overlay */}
-			<Show when={props.highlight && segments()}>
-				<div
-					ref={mirrorRef}
-					aria-hidden
-					class={cn(sharedStyle, 'absolute inset-0 pointer-events-none select-none text-transparent')}
-					style={{
-						'overflow-y': 'hidden',
-						'overflow-x': 'hidden',
-						transform: `translateY(-${scrollTop()}px) translateX(-${scrollLeft()}px)`,
-					}}
-				>
-					<For each={segments()!}>
-						{(seg) => (
-							<Show
-								when={seg.css}
-								fallback={<span>{seg.text}</span>}
-							>
-								<span
-									style={{
-										'background-color': seg.css,
-										color: (seg.oklchL ?? 0) > 0.6 ? '#000' : '#fff',
-										'border-radius': '2px',
-										padding: '0 1px',
-									}}
-								>
-									{seg.text}
-								</span>
-							</Show>
-						)}
-					</For>
-				</div>
-			</Show>
+	const hasEditorSelection = () => {
+		if (!jar || editorRef.ownerDocument.activeElement !== editorRef) return false;
 
-			<textarea
-				ref={textareaRef}
+		const selection = editorRef.ownerDocument.getSelection();
+		if (!selection || selection.rangeCount === 0) return false;
+
+		return (
+			!!selection.anchorNode &&
+			!!selection.focusNode &&
+			editorRef.contains(selection.anchorNode) &&
+			editorRef.contains(selection.focusNode)
+		);
+	};
+
+	const paintEditor = (text: string, preserveSelection: boolean) => {
+		if (!editorRef) return;
+
+		let selection: ReturnType<typeof jar.save> | null = null;
+		if (preserveSelection && hasEditorSelection()) {
+			try {
+				selection = jar!.save();
+			} catch {
+				selection = null;
+			}
+		}
+
+		editorRef.innerHTML = renderHighlightedHtml(text);
+
+		if (selection && jar) {
+			try {
+				jar.restore(selection);
+			} catch {
+				// The DOM changed under us or the selection moved; leave the new markup in place.
+			}
+		}
+	};
+
+	onMount(() => {
+		editorRef.textContent = props.value;
+		paintEditor(props.value, false);
+		lastSyncedValue = props.value;
+
+		if (props.readonly) return;
+
+		jar = CodeJar(
+			editorRef,
+			(el) => {
+				paintEditor(el.textContent ?? '', false);
+			},
+			{
+				tab: '  ',
+				spellcheck: false,
+				catchTab: true,
+			},
+		);
+
+		jar.onUpdate((code) => {
+			lastSyncedValue = code;
+			if (code !== props.value) props.onInput?.(code);
+		});
+
+		onCleanup(() => jar?.destroy());
+	});
+
+	createEffect(() => {
+		const value = props.value;
+		props.tokens;
+		props.highlight;
+
+		if (!editorRef) return;
+
+		if (props.readonly) {
+			paintEditor(value, false);
+			lastSyncedValue = value;
+			return;
+		}
+
+		if (value !== lastSyncedValue) {
+			editorRef.textContent = value;
+			paintEditor(value, false);
+			lastSyncedValue = value;
+			return;
+		}
+
+		paintEditor(value, true);
+	});
+
+	return (
+		<div
+			class={cn(
+				'relative w-full h-full min-h-0',
+				'border border-input rounded-md overflow-hidden',
+				'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring/50',
+			)}
+		>
+			<div
+				ref={(el) => {
+					editorRef = el;
+				}}
+				contentEditable={props.readonly ? false : 'plaintext-only'}
+				role="textbox"
+				aria-multiline="true"
+				data-placeholder={props.placeholder}
 				class={cn(
-					sharedStyle,
-					'relative w-full h-full min-h-0 block',
-					'bg-transparent',
-					'border border-input rounded-md',
-					'focus:outline-none focus:ring-2 focus:ring-ring/50',
+					'color-editor-host h-full min-h-full w-full overflow-auto p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words outline-none text-foreground',
 					props.readonly && 'cursor-default',
 				)}
-				style={{ 'caret-color': 'currentColor', color: 'inherit' }}
-				value={props.value}
-				readOnly={props.readonly}
-				placeholder={props.placeholder}
-				onInput={(e) => props.onInput?.(e.currentTarget.value)}
-				onScroll={(e) => {
-					setScrollTop(e.currentTarget.scrollTop);
-					setScrollLeft(e.currentTarget.scrollLeft);
-				}}
+				style={{ 'caret-color': 'var(--foreground)' }}
+				spellcheck={false}
 			/>
 		</div>
 	);

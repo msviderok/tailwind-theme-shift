@@ -2,8 +2,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { createMemo, createSignal, Show } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
-import { convertHslToOklchCss, convertRawHsl } from './lib/parseHslColors';
 import type { ColorToken } from './lib/parseHslColors';
+import { convertHslToOklchCss, convertRawHsl } from './lib/parseHslColors';
 import { validate } from './lib/validateTailwindTheme';
 
 const PLACEHOLDER = `:root {
@@ -67,10 +67,7 @@ export default function App() {
 			<div class="flex items-center justify-between shrink-0">
 				<h1 class="text-xl font-semibold tracking-tight">HSL → OKLCH Tailwind v4 Converter</h1>
 				<div class="flex items-center gap-2">
-					<Switch
-						checked={highlight()}
-						onChange={(checked) => setHighlight(checked)}
-					/>
+					<Switch checked={highlight()} onCheckedChange={(checked) => setHighlight(checked)} />
 					<Label>Highlight colors</Label>
 				</div>
 			</div>
@@ -99,7 +96,9 @@ export default function App() {
 					/>
 				</div>
 				<div class="flex flex-col gap-1.5 min-h-0">
-					<Label class="text-xs text-muted-foreground uppercase tracking-wide">Output (OKLCH)</Label>
+					<Label class="text-xs text-muted-foreground uppercase tracking-wide">
+						Output (OKLCH)
+					</Label>
 					<ColorEditor
 						value={outputValue()}
 						readonly={true}
