@@ -3,6 +3,7 @@ import { For, createMemo, onMount } from 'solid-js';
 import type { ColorToken } from '../lib/parseHslColors';
 import type { DisplayToken } from '../lib/syntaxTokenizer';
 import { tokenizeLine } from '../lib/syntaxTokenizer';
+import { cn } from '../lib/utils';
 
 interface ColorEditorProps {
 	value: string;
@@ -18,23 +19,23 @@ interface ColorEditorProps {
 function getTokenClass(token: DisplayToken) {
 	switch (token.type) {
 		case 'selector':
-			return 'tok-selector';
+			return 'text-[var(--syntax-selector)] font-medium';
 		case 'punct':
-			return 'tok-punct';
+			return 'text-foreground/60';
 		case 'prop':
-			return 'tok-prop';
+			return 'text-[var(--syntax-prop)]';
 		case 'val-hsl':
-			return 'tok-val-in-hsl';
+			return 'inline-block box-border align-middle border border-transparent px-[5px] leading-[18px] text-[var(--syntax-value-input)]';
 		case 'val-oklch':
-			return 'tok-val';
+			return 'inline-block box-border align-middle border border-transparent px-[5px] leading-[18px] text-[var(--syntax-value-output)]';
 		case 'val-other':
-			return 'tok-other';
+			return 'inline-block box-border align-middle border border-transparent px-[5px] leading-[18px] text-foreground/70';
 		case 'comment':
-			return 'tok-comment';
+			return 'text-[var(--syntax-comment)] italic';
 		case 'plain':
-			return 'tok-plain';
+			return 'text-foreground/85';
 		default:
-			return 'tok-plain';
+			return 'text-foreground/85';
 	}
 }
 
@@ -42,7 +43,7 @@ function TokenSpan(props: { token: DisplayToken }): JSX.Element {
 	if (props.token.type === 'val-color-badge') {
 		return (
 			<span
-				class="tok-val-bg"
+				class="inline-block box-border align-middle rounded-[3px] px-[5px] leading-[18px] font-medium transition-[background,color]"
 				style={{
 					'background-color': props.token.css ?? 'transparent',
 					color: `contrast-color(${props.token.css})`,
@@ -79,7 +80,6 @@ function TokenizedCode(props: {
 	side: 'input' | 'output';
 	showChips: boolean;
 	placeholder?: string;
-	placeholderClass?: string;
 }) {
 	const tokenLines = createMemo(() =>
 		tokenizeValue(props.value, props.colorTokens, props.side, props.showChips),
@@ -88,7 +88,7 @@ function TokenizedCode(props: {
 	return (
 		<>
 			{!props.value && props.placeholder ? (
-				<span class={props.placeholderClass ?? 'tok-placeholder'}>{props.placeholder}</span>
+				<span class="text-muted-foreground">{props.placeholder}</span>
 			) : (
 				<For each={tokenLines()}>
 					{(lineTokens, index) => (
@@ -127,7 +127,7 @@ export function ColorEditor(props: ColorEditorProps) {
 
 	if (props.readonly) {
 		return (
-			<div class="output-rendered">
+			<div class="block min-h-full w-full font-mono text-[13px] leading-[20px] whitespace-pre-wrap break-all [tab-size:2]">
 				<TokenizedCode
 					value={props.value}
 					colorTokens={props.colorTokens}
@@ -140,8 +140,12 @@ export function ColorEditor(props: ColorEditorProps) {
 	}
 
 	return (
-		<div class="input-wrap">
-			<div ref={highlightRef} class="input-highlight" aria-hidden="true">
+		<div class="relative flex-1 min-h-full">
+			<div
+				ref={highlightRef}
+				class="pointer-events-none absolute inset-0 overflow-hidden font-mono text-[13px] leading-[20px] whitespace-pre-wrap break-all [tab-size:2]"
+				aria-hidden="true"
+			>
 				<TokenizedCode
 					value={props.value}
 					colorTokens={props.colorTokens}
@@ -152,7 +156,10 @@ export function ColorEditor(props: ColorEditorProps) {
 			</div>
 			<textarea
 				ref={textareaRef}
-				class="input-textarea"
+				class={cn(
+					'absolute inset-0 h-full w-full resize-none border-0 bg-transparent p-0 font-mono text-[13px] leading-[20px] whitespace-pre-wrap break-all text-transparent outline-none [tab-size:2]',
+					'caret-[var(--primary)] placeholder:text-transparent selection:bg-[color-mix(in_srgb,var(--primary)_34%,transparent)]',
+				)}
 				value={props.value}
 				onInput={(event) => props.onInput?.(event.currentTarget.value)}
 				onScroll={syncScroll}
