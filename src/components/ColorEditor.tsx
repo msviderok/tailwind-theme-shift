@@ -1,197 +1,166 @@
-import { cn } from '@/lib/utils';
-import { CodeJar } from 'codejar';
-import { createEffect, on, onCleanup, onMount } from 'solid-js';
+import type { JSX } from 'solid-js';
+import { For, createMemo, onMount } from 'solid-js';
 import type { ColorToken } from '../lib/parseHslColors';
+import type { DisplayToken } from '../lib/syntaxTokenizer';
+import { tokenizeLine } from '../lib/syntaxTokenizer';
 
 interface ColorEditorProps {
 	value: string;
-	onInput?: (val: string) => void;
-	readonly?: boolean;
-	highlight: boolean;
-	tokens: ColorToken[];
-	/** whether tokens are input-side (inputStart/End) or output-side (outputStart/End) */
+	onInput?: (value: string) => void;
+	readonly: boolean;
+	showChips: boolean;
+	colorTokens: ColorToken[];
 	side: 'input' | 'output';
 	placeholder?: string;
+	onScrollPositionChange?: (position: { top: number; left: number }) => void;
 }
 
-function getCharRanges(
-	text: string,
-	tokens: ColorToken[],
-	side: 'input' | 'output',
-): Array<{ text: string; css?: string; oklchL?: number }> {
-	if (tokens.length === 0) return [{ text }];
-
-	const segments: Array<{ text: string; css?: string; oklchL?: number }> = [];
-	let cursor = 0;
-
-	for (const tok of tokens) {
-		const start = side === 'input' ? tok.inputStart : tok.outputStart;
-		const end = side === 'input' ? tok.inputEnd : tok.outputEnd;
-		const css = side === 'input' ? tok.inputCss : tok.outputCss;
-
-		if (start > cursor) {
-			segments.push({ text: text.slice(cursor, start) });
-		}
-		if (end > start) {
-			segments.push({
-				text: text.slice(start, end),
-				css,
-				oklchL: tok.oklchL,
-			});
-		}
-		cursor = end;
+function getTokenClass(token: DisplayToken) {
+	switch (token.type) {
+		case 'selector':
+			return 'tok-selector';
+		case 'punct':
+			return 'tok-punct';
+		case 'prop':
+			return 'tok-prop';
+		case 'val-hsl':
+			return 'tok-val-in-hsl';
+		case 'val-oklch':
+			return 'tok-val';
+		case 'val-other':
+			return 'tok-other';
+		case 'comment':
+			return 'tok-comment';
+		case 'plain':
+			return 'tok-plain';
+		default:
+			return 'tok-plain';
 	}
-
-	if (cursor < text.length) {
-		segments.push({ text: text.slice(cursor) });
-	}
-
-	return segments;
 }
 
-function escapeHtml(text: string) {
-	return text
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#39;');
-}
-
-export function ColorEditor(props: ColorEditorProps) {
-	let editorRef!: HTMLDivElement;
-	let jar: ReturnType<typeof CodeJar> | undefined;
-	let lastSyncedValue = '';
-
-	const renderHighlightedHtml = (text: string) => {
-		const segments = props.highlight ? getCharRanges(text, props.tokens, props.side) : [{ text }];
-
-		return segments
-			.map((seg) => {
-				const chunk = escapeHtml(seg.text);
-				if (!seg.css) return chunk;
-
-				const ring =
-					(seg.oklchL ?? 0) > 0.6
-						? 'inset 0 0 0 1px rgb(0 0 0 / 0.06)'
-						: 'inset 0 0 0 1px rgb(255 255 255 / 0.12)';
-
-				const col = escapeHtml(seg.css);
-				return `<span style="background-color:${col};border-radius:2px;color:contrast-color(${col});box-shadow:${ring}">${chunk}</span>`;
-			})
-			.join('');
-	};
-
-	const hasEditorSelection = () => {
-		if (!jar || editorRef.ownerDocument.activeElement !== editorRef) return false;
-
-		const selection = editorRef.ownerDocument.getSelection();
-		if (!selection || selection.rangeCount === 0) return false;
-
+function TokenSpan(props: { token: DisplayToken }): JSX.Element {
+	if (props.token.type === 'val-color-badge') {
 		return (
-			!!selection.anchorNode &&
-			!!selection.focusNode &&
-			editorRef.contains(selection.anchorNode) &&
-			editorRef.contains(selection.focusNode)
+			<span
+				class="tok-val-bg"
+				style={{
+					'background-color': props.token.css ?? 'transparent',
+					color: `contrast-color(${props.token.css})`,
+					border: `1px solid contrast-color(${props.token.css})`,
+				}}
+			>
+				{props.token.text}
+			</span>
 		);
-	};
+	}
 
-	const paintEditor = (text: string, preserveSelection: boolean) => {
-		if (!editorRef) return;
+	return <span class={getTokenClass(props.token)}>{props.token.text}</span>;
+}
 
-		let selection: ReturnType<typeof jar.save> | null = null;
-		if (preserveSelection && hasEditorSelection()) {
-			try {
-				selection = jar!.save();
-			} catch {
-				selection = null;
-			}
-		}
+function tokenizeValue(
+	value: string,
+	colorTokens: ColorToken[],
+	side: 'input' | 'output',
+	showChips: boolean,
+) {
+	const lines = value.split('\n');
+	let offset = 0;
 
-		editorRef.innerHTML = renderHighlightedHtml(text);
-
-		if (selection && jar) {
-			try {
-				jar.restore(selection);
-			} catch {
-				// The DOM changed under us or the selection moved; leave the new markup in place.
-			}
-		}
-	};
-
-	onMount(() => {
-		editorRef.textContent = props.value;
-		paintEditor(props.value, false);
-		lastSyncedValue = props.value;
-
-		if (props.readonly) return;
-
-		jar = CodeJar(
-			editorRef,
-			(el) => {
-				paintEditor(el.textContent ?? '', false);
-			},
-			{
-				tab: '  ',
-				spellcheck: false,
-				catchTab: true,
-			},
-		);
-
-		jar.onUpdate((code) => {
-			lastSyncedValue = code;
-			if (code !== props.value) props.onInput?.(code);
-		});
-
-		onCleanup(() => jar?.destroy());
+	return lines.map((line) => {
+		const lineOffset = offset;
+		offset += line.length + 1;
+		return tokenizeLine(line, lineOffset, colorTokens, side, showChips);
 	});
+}
 
-	createEffect(
-		on(
-			[() => props.value, () => props.readonly, () => props.tokens, () => props.highlight],
-			([value, readonly]) => {
-				if (!editorRef) return;
-
-				if (readonly) {
-					paintEditor(value, false);
-					lastSyncedValue = value;
-					return;
-				}
-
-				if (value !== lastSyncedValue) {
-					editorRef.textContent = value;
-					paintEditor(value, false);
-					lastSyncedValue = value;
-					return;
-				}
-
-				paintEditor(value, true);
-			},
-		),
+function TokenizedCode(props: {
+	value: string;
+	colorTokens: ColorToken[];
+	side: 'input' | 'output';
+	showChips: boolean;
+	placeholder?: string;
+	placeholderClass?: string;
+}) {
+	const tokenLines = createMemo(() =>
+		tokenizeValue(props.value, props.colorTokens, props.side, props.showChips),
 	);
 
 	return (
-		<div
-			class={cn(
-				'relative w-full h-full min-h-0',
-				'border border-input rounded-md overflow-hidden',
-				'focus-within:outline-none focus-within:ring-2 focus-within:ring-ring/50',
+		<>
+			{!props.value && props.placeholder ? (
+				<span class={props.placeholderClass ?? 'tok-placeholder'}>{props.placeholder}</span>
+			) : (
+				<For each={tokenLines()}>
+					{(lineTokens, index) => (
+						<>
+							<For each={lineTokens}>{(token) => <TokenSpan token={token} />}</For>
+							{index() < tokenLines().length - 1 ? '\n' : null}
+						</>
+					)}
+				</For>
 			)}
-		>
-			<div
-				ref={(el) => {
-					editorRef = el;
-				}}
-				contentEditable={props.readonly ? false : 'plaintext-only'}
-				role="textbox"
-				aria-multiline="true"
-				data-placeholder={props.placeholder}
-				class={cn(
-					'color-editor-host h-full min-h-full w-full overflow-auto p-3 font-mono text-sm leading-relaxed whitespace-pre-wrap break-words outline-none text-foreground',
-					props.readonly && 'cursor-default',
-				)}
-				style={{ 'caret-color': 'var(--foreground)' }}
+		</>
+	);
+}
+
+export function ColorEditor(props: ColorEditorProps) {
+	let textareaRef: HTMLTextAreaElement | undefined;
+	let highlightRef: HTMLDivElement | undefined;
+
+	const syncScroll = () => {
+		if (!textareaRef) return;
+
+		if (highlightRef) {
+			highlightRef.scrollTop = textareaRef.scrollTop;
+			highlightRef.scrollLeft = textareaRef.scrollLeft;
+		}
+
+		props.onScrollPositionChange?.({
+			top: textareaRef.scrollTop,
+			left: textareaRef.scrollLeft,
+		});
+	};
+
+	onMount(() => {
+		syncScroll();
+	});
+
+	if (props.readonly) {
+		return (
+			<div class="output-rendered">
+				<TokenizedCode
+					value={props.value}
+					colorTokens={props.colorTokens}
+					side={props.side}
+					showChips={props.showChips}
+					placeholder={props.placeholder}
+				/>
+			</div>
+		);
+	}
+
+	return (
+		<div class="input-wrap">
+			<div ref={highlightRef} class="input-highlight" aria-hidden="true">
+				<TokenizedCode
+					value={props.value}
+					colorTokens={props.colorTokens}
+					side={props.side}
+					showChips={props.showChips}
+					placeholder={props.placeholder}
+				/>
+			</div>
+			<textarea
+				ref={textareaRef}
+				class="input-textarea"
+				value={props.value}
+				onInput={(event) => props.onInput?.(event.currentTarget.value)}
+				onScroll={syncScroll}
+				placeholder={props.placeholder}
 				spellcheck={false}
+				autocapitalize="off"
+				autocomplete="off"
+				autocorrect="off"
 			/>
 		</div>
 	);
