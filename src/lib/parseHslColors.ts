@@ -46,85 +46,55 @@ function formatOklch(okl: number, okc: number, okh: number, alpha?: string): str
 // Regex patterns
 // ---------------------------------------------------------------------------
 
-// Pattern 1 – functional hsl()/hsla()
+// Functional hsl()/hsla()
 // Handles modern (space-sep) and legacy (comma-sep), optional alpha after / or ,
-const FUNCTIONAL_HSL =
-	/hsla?\(\s*([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s*[,\s]\s*([+-]?\d*\.?\d+)%\s*[,\s]\s*([+-]?\d*\.?\d+)%\s*(?:[,/]\s*([+-]?\d*\.?\d+%?))?\s*\)/gi;
+const FUNCTIONAL_HSL_EXACT =
+	/^hsla?\(\s*([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s*[,\s]\s*([+-]?\d*\.?\d+)%\s*[,\s]\s*([+-]?\d*\.?\d+)%\s*(?:[,/]\s*([+-]?\d*\.?\d+%?))?\s*\)$/i;
 
-// Pattern 2 – bare triplet in custom-property: H S% L% ;
-// We capture the full declaration so we can replace only the triplet portion
-const BARE_TRIPLET_IN_DECL =
-	/(--[\w-]+\s*:\s*)([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s+(\d*\.?\d+)%\s+(\d*\.?\d+)%\s*(?:\/\s*([\d.]+%?))?\s*;/g;
+// Bare triplet used as the full custom property value.
+const BARE_TRIPLET_EXACT =
+	/^([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s+(\d*\.?\d+)%\s+(\d*\.?\d+)%\s*(?:\/\s*([\d.]+%?))?$/i;
 
-// ---------------------------------------------------------------------------
-// Detect whether an offset is inside a :root / @theme block
-// ---------------------------------------------------------------------------
-function buildThemeRanges(src: string): Array<[number, number]> {
-	const ranges: Array<[number, number]> = [];
-	// Match :root or @theme (with optional inline) followed by { ... }
-	const opener = /(?::root|@theme(?:\s+\w+)?)\s*\{/g;
-	let m: RegExpExecArray | null;
-	while ((m = opener.exec(src)) !== null) {
-		const start = m.index;
-		let depth = 0;
-		let i = m.index + m[0].length - 1; // points at the opening '{'
-		while (i < src.length) {
-			if (src[i] === '{') depth++;
-			else if (src[i] === '}') {
-				depth--;
-				if (depth === 0) {
-					ranges.push([start, i]);
-					break;
-				}
-			}
-			i++;
-		}
-	}
-	return ranges;
-}
-
-function inThemeRange(offset: number, ranges: Array<[number, number]>): boolean {
-	return ranges.some(([s, e]) => offset >= s && offset <= e);
-}
+// Any custom property declaration anywhere in the source.
+const CUSTOM_PROPERTY_DECL = /(--[\w-]+\s*:\s*)([^;]+)(;)/g;
 
 // ---------------------------------------------------------------------------
 // Main: findHslTokens
 // ---------------------------------------------------------------------------
 export function findHslTokens(src: string): HslToken[] {
 	const tokens: HslToken[] = [];
-	const themeRanges = buildThemeRanges(src);
-
-	// --- functional hsl()/hsla() anywhere in the source ---
-	FUNCTIONAL_HSL.lastIndex = 0;
 	let m: RegExpExecArray | null;
-	while ((m = FUNCTIONAL_HSL.exec(src)) !== null) {
-		const [full, rawH, rawS, rawL, rawA] = m;
+
+	CUSTOM_PROPERTY_DECL.lastIndex = 0;
+	while ((m = CUSTOM_PROPERTY_DECL.exec(src)) !== null) {
+		const [, prefix, rawValue] = m;
+		const trimmedValue = rawValue.trim();
+		const leadingWhitespace = rawValue.match(/^\s*/)?.[0].length ?? 0;
+		const valueStart = m.index + prefix.length + leadingWhitespace;
+
+		const functional = FUNCTIONAL_HSL_EXACT.exec(trimmedValue);
+		if (functional) {
+			const [full, rawH, rawS, rawL, rawA] = functional;
+			tokens.push({
+				start: valueStart,
+				end: valueStart + full.length,
+				raw: full,
+				h: normaliseHue(rawH),
+				s: parseFloat(rawS),
+				l: parseFloat(rawL),
+				a: rawA,
+			});
+			continue;
+		}
+
+		const bare = BARE_TRIPLET_EXACT.exec(trimmedValue);
+		if (!bare) continue;
+
+		const [full, rawH, rawS, rawL, rawA] = bare;
 		tokens.push({
-			start: m.index,
-			end: m.index + full.length,
+			start: valueStart,
+			end: valueStart + full.length,
 			raw: full,
-			h: normaliseHue(rawH),
-			s: parseFloat(rawS),
-			l: parseFloat(rawL),
-			a: rawA,
-		});
-	}
-
-	// --- bare triplets inside :root / @theme only ---
-	BARE_TRIPLET_IN_DECL.lastIndex = 0;
-	while ((m = BARE_TRIPLET_IN_DECL.exec(src)) !== null) {
-		const [full, prefix, rawH, rawS, rawL, rawA] = m;
-		const tripletStart = m.index + prefix.length;
-		// Skip if a functional hsl token already covers this offset
-		const alreadyCovered = tokens.some((t) => t.start <= tripletStart && tripletStart < t.end);
-		if (alreadyCovered) continue;
-		if (!inThemeRange(m.index, themeRanges)) continue;
-
-		tokens.push({
-			start: tripletStart,
-			// end covers up to (not including) the semicolon — we replace just the triplet portion
-			end: m.index + full.length - 1, // stop before ';'
-			raw: src.slice(tripletStart, m.index + full.length - 1),
 			h: normaliseHue(rawH),
 			s: parseFloat(rawS),
 			l: parseFloat(rawL),
@@ -142,6 +112,10 @@ export function findHslTokens(src: string): HslToken[] {
 // ---------------------------------------------------------------------------
 export function convertHslToOklchCss(src: string): { output: string; tokens: ColorToken[] } {
 	const hslTokens = findHslTokens(src);
+	if (hslTokens.length === 0) {
+		return convertRawHsl(src);
+	}
+
 	const colorTokens: ColorToken[] = [];
 
 	let output = '';
@@ -156,7 +130,9 @@ export function convertHslToOklchCss(src: string): { output: string; tokens: Col
 
 		const ok = hslToOklch(t.h, t.s, t.l);
 		const oklchStr = formatOklch(ok.l, ok.c, ok.h, t.a);
-		const inputCss = t.raw.startsWith('hsl') ? t.raw : `hsl(${t.h} ${t.s}% ${t.l}%)`;
+		const inputCss = t.raw.startsWith('hsl')
+			? t.raw
+			: `hsl(${t.h} ${t.s}% ${t.l}%${t.a !== undefined ? ` / ${t.a}` : ''})`;
 
 		colorTokens.push({
 			inputStart: t.start,
@@ -184,8 +160,7 @@ export function convertRawHsl(src: string): { output: string; tokens: ColorToken
 	const trimmed = src.trim().replace(/;$/, '').trim();
 
 	// Try functional first
-	FUNCTIONAL_HSL.lastIndex = 0;
-	const fm = FUNCTIONAL_HSL.exec(trimmed);
+	const fm = FUNCTIONAL_HSL_EXACT.exec(trimmed);
 	if (fm) {
 		const [, rawH, rawS, rawL, rawA] = fm;
 		const ok = hslToOklch(normaliseHue(rawH), parseFloat(rawS), parseFloat(rawL));
@@ -203,9 +178,7 @@ export function convertRawHsl(src: string): { output: string; tokens: ColorToken
 	}
 
 	// Try bare triplet (H S% L% with optional / alpha)
-	const BARE =
-		/^([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s+(\d*\.?\d+)%\s+(\d*\.?\d+)%\s*(?:\/\s*([\d.]+%?))?$/i;
-	const bm = BARE.exec(trimmed);
+	const bm = BARE_TRIPLET_EXACT.exec(trimmed);
 	if (bm) {
 		const [, rawH, rawS, rawL, rawA] = bm;
 		const ok = hslToOklch(normaliseHue(rawH), parseFloat(rawS), parseFloat(rawL));

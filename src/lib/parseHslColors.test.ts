@@ -58,10 +58,16 @@ describe('parseHslColors – bare triplets', () => {
 		expect(output).toContain('oklch(');
 	});
 
-	it('bare triplet OUTSIDE a theme block is left untouched', () => {
-		const src = `body { --primary: 222.2 47.4% 11.2%; }`;
+	it('bare triplet inside any custom property is converted', () => {
+		const src = `body {\n  --color-primary: 222.2 47.4% 11.2%;\n}`;
 		const { output } = convertHslToOklchCss(src);
-		// Should not convert since it's not in :root or @theme
+		expect(output).toContain('oklch(');
+		expect(output).not.toContain('222.2 47.4% 11.2%');
+	});
+
+	it('non custom-property bare triplet is left untouched', () => {
+		const src = `body { color: 222.2 47.4% 11.2%; }`;
+		const { output } = convertHslToOklchCss(src);
 		expect(output).toBe(src);
 	});
 
@@ -74,19 +80,26 @@ describe('parseHslColors – bare triplets', () => {
 
 describe('parseHslColors – multiple colors & non-color text', () => {
 	it('preserves surrounding text', () => {
-		const src = `/* comment */\n.foo { color: hsl(0 0% 100%); background: hsl(0 0% 0%); }`;
+		const src = `/* comment */\n.foo { --color: hsl(0 0% 100%); --background: hsl(0 0% 0%); }`;
 		const { output } = convertHslToOklchCss(src);
 		expect(output).toContain('/* comment */');
-		expect(output).toContain('.foo { color:');
+		expect(output).toContain('.foo { --color:');
 		expect(output).not.toContain('hsl(');
 	});
 
 	it('multiple colors converted in order', () => {
-		const src = `hsl(0 0% 100%) hsl(0 0% 0%)`;
+		const src = `:root { --white: hsl(0 0% 100%); --black: hsl(0 0% 0%); }`;
 		const { output, tokens } = convertHslToOklchCss(src);
 		expect(tokens).toHaveLength(2);
 		expect(output).toContain('oklch(1.000');
 		expect(output).toContain('oklch(0.000');
+	});
+
+	it('plain CSS properties using hsl() are left untouched', () => {
+		const src = `.foo { color: hsl(0 0% 100%); background: hsl(0 0% 0%); }`;
+		const { output, tokens } = convertHslToOklchCss(src);
+		expect(output).toBe(src);
+		expect(tokens).toHaveLength(0);
 	});
 
 	it('non-color text untouched', () => {
@@ -131,8 +144,8 @@ describe('parseHslColors – convertRawHsl', () => {
 });
 
 describe('parseHslColors – token positions', () => {
-	it('token start/end match the original text slice', () => {
-		const src = 'color: hsl(220 10% 50%);';
+	it('token start/end match the custom property value slice', () => {
+		const src = ':root { --color: hsl(220 10% 50%); }';
 		const tokens = findHslTokens(src);
 		expect(tokens).toHaveLength(1);
 		expect(src.slice(tokens[0].start, tokens[0].end)).toBe('hsl(220 10% 50%)');
