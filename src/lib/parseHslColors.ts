@@ -1,6 +1,6 @@
 import { hslToOklch } from './hslToOklch';
 
-export interface HslToken {
+interface HslToken {
 	start: number;
 	end: number;
 	raw: string;
@@ -203,7 +203,8 @@ export function convertRawHsl(src: string): { output: string; tokens: ColorToken
 	}
 
 	// Try bare triplet (H S% L% with optional / alpha)
-	const BARE = /^([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s+(\d*\.?\d+)%\s+(\d*\.?\d+)%\s*(?:\/\s*([\d.]+%?))?$/i;
+	const BARE =
+		/^([+-]?\d*\.?\d+(?:deg|rad|turn|grad)?)\s+(\d*\.?\d+)%\s+(\d*\.?\d+)%\s*(?:\/\s*([\d.]+%?))?$/i;
 	const bm = BARE.exec(trimmed);
 	if (bm) {
 		const [, rawH, rawS, rawL, rawA] = bm;

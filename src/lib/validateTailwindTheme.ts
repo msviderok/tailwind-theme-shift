@@ -25,7 +25,7 @@ function looksLikeCss(src: string): boolean {
 	);
 }
 
-export const InputSchema = v.pipe(
+const InputSchema = v.pipe(
 	v.string(),
 	v.transform((s) => s.trim()),
 	v.minLength(1, 'Empty input'),
@@ -36,15 +36,15 @@ export const InputSchema = v.pipe(
 	),
 );
 
-export type InputKind = { kind: 'raw-hsl' } | { kind: 'css' };
+type InputKind = { kind: 'raw-hsl' } | { kind: 'css' };
 
 export function classify(src: string): InputKind {
 	return RAW_HSL.test(src.trim()) ? { kind: 'raw-hsl' } : { kind: 'css' };
 }
 
-export function validate(src: string):
-	| { ok: true; kind: 'raw-hsl' | 'css' }
-	| { ok: false; message: string } {
+export function validate(
+	src: string,
+): { ok: true; kind: 'raw-hsl' | 'css' } | { ok: false; message: string } {
 	const r = v.safeParse(InputSchema, src);
 	return r.success
 		? { ok: true as const, kind: classify(src).kind }

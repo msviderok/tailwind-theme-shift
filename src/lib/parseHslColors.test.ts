@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { convertHslToOklchCss, convertRawHsl, findHslTokens } from './parseHslColors';
 
 // Helper: assert oklch output contains expected L C H values (approx)
-function assertOklch(oklch: string, expL: number, expC: number, expH: number, tol = 0.01) {
+function assertOklch(oklch: string, expL: number, expC: number, expH: number) {
 	const m = oklch.match(/oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)/);
 	expect(m, `Not a valid oklch string: ${oklch}`).toBeTruthy();
 	expect(parseFloat(m![1])).toBeCloseTo(expL, 2);
@@ -99,12 +99,12 @@ describe('parseHslColors – multiple colors & non-color text', () => {
 describe('parseHslColors – reference values', () => {
 	it('hsl(0 0% 100%) ≈ oklch(1 0 0) (white)', () => {
 		const { output } = convertHslToOklchCss('hsl(0 0% 100%)');
-		assertOklch(output, 1, 0, 0, 0.01);
+		assertOklch(output, 1, 0, 0);
 	});
 
 	it('hsl(0 0% 0%) ≈ oklch(0 0 0) (black)', () => {
 		const { output } = convertHslToOklchCss('hsl(0 0% 0%)');
-		assertOklch(output, 0, 0, 0, 0.01);
+		assertOklch(output, 0, 0, 0);
 	});
 });
 

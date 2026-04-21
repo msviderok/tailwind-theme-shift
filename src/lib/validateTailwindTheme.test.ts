@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vite-plus/test';
 import { classify, validate } from './validateTailwindTheme';
 
 describe('validateTailwindTheme – valid CSS inputs', () => {
@@ -38,10 +38,7 @@ describe('validateTailwindTheme – raw-hsl classification', () => {
 		});
 	}
 
-	const cssCases = [
-		':root { --x: 220 10% 50%; }',
-		'@theme { --primary: 222.2 47.4% 11.2%; }',
-	];
+	const cssCases = [':root { --x: 220 10% 50%; }', '@theme { --primary: 222.2 47.4% 11.2%; }'];
 
 	for (const c of cssCases) {
 		it(`classifies as css: ${c.slice(0, 40)}`, () => {

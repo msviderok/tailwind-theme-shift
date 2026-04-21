@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 import { CodeJar } from 'codejar';
-import { createEffect, onCleanup, onMount } from 'solid-js';
+import { createEffect, on, onCleanup, onMount } from 'solid-js';
 import type { ColorToken } from '../lib/parseHslColors';
 
 interface ColorEditorProps {
@@ -146,28 +146,29 @@ export function ColorEditor(props: ColorEditorProps) {
 		onCleanup(() => jar?.destroy());
 	});
 
-	createEffect(() => {
-		const value = props.value;
-		props.tokens;
-		props.highlight;
+	createEffect(
+		on(
+			[() => props.value, () => props.readonly, () => props.tokens, () => props.highlight],
+			([value, readonly]) => {
+				if (!editorRef) return;
 
-		if (!editorRef) return;
+				if (readonly) {
+					paintEditor(value, false);
+					lastSyncedValue = value;
+					return;
+				}
 
-		if (props.readonly) {
-			paintEditor(value, false);
-			lastSyncedValue = value;
-			return;
-		}
+				if (value !== lastSyncedValue) {
+					editorRef.textContent = value;
+					paintEditor(value, false);
+					lastSyncedValue = value;
+					return;
+				}
 
-		if (value !== lastSyncedValue) {
-			editorRef.textContent = value;
-			paintEditor(value, false);
-			lastSyncedValue = value;
-			return;
-		}
-
-		paintEditor(value, true);
-	});
+				paintEditor(value, true);
+			},
+		),
+	);
 
 	return (
 		<div

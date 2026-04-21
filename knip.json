@@ -3,5 +3,6 @@
 	"vite": {
 		"config": ["vite.config.{js,mjs,ts,cjs,mts,cts}"]
 	},
-	"tags": ["-lintignore"]
+	"tags": ["-lintignore"],
+	"ignoreFiles": ["./shadcn-solid.config.ts"]
 }
