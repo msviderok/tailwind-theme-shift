@@ -8,7 +8,8 @@
 		"start": "vite",
 		"dev": "vite",
 		"build": "vite build",
-		"serve": "vite preview"
+		"serve": "vite preview",
+		"knip": "knip"
 	},
 	"dependencies": {
 		"@fontsource-variable/outfit": "^5.2.8",
@@ -25,8 +26,10 @@
 	},
 	"devDependencies": {
 		"@tailwindcss/vite": "^4.2.4",
+		"@types/node": "^25.6.0",
 		"babel-preset-solid": "1.9.6",
 		"jsdom": "^29.0.2",
+		"knip": "^6.6.0",
 		"tailwindcss": "^4.2.4",
 		"typescript": "^6.0.3",
 		"vite-plugin-solid": "^2.11.12"
