@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { For, Show, createMemo, onMount } from 'solid-js';
+import { For, Show, createEffect, createMemo, onMount } from 'solid-js';
 import type { ColorToken } from '../lib/parseHslColors';
 import type { DisplayToken } from '../lib/syntaxTokenizer';
 import { tokenizeLine } from '../lib/syntaxTokenizer';
@@ -13,6 +13,8 @@ interface ColorEditorProps {
 	colorTokens: ColorToken[];
 	side: 'input' | 'output';
 	placeholder?: string;
+	scrollTop?: number;
+	externallyScrolled?: boolean;
 	onScrollPositionChange?: (position: { top: number; left: number }) => void;
 }
 
@@ -46,7 +48,7 @@ function TokenSpan(props: { token: DisplayToken }): JSX.Element {
 			class={cn(
 				getTokenClass(props.token),
 				isBadge() &&
-					'relative before:transition-[background,color] before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:z-[-1] before:h-[calc(100%-2px)] before:border before:border-(--b) before:rounded-[3px] before:px-[5px] before:box-content before:bg-(--bg) z-0',
+					'relative before:transition-[background,color] before:content-[""] before:absolute before:top-[-2px] before:left-[-5px] before:w-full before:z-[-1] before:h-[18px] before:border before:border-(--b) before:rounded-[3px] before:px-[5px] before:box-content before:bg-(--bg) z-0',
 			)}
 			style={{
 				color: isBadge() ? `contrast-color(${props.token.css})` : undefined,
@@ -107,7 +109,12 @@ export function ColorEditor(props: ColorEditorProps) {
 	let textareaRef: HTMLTextAreaElement | undefined;
 	let highlightRef: HTMLDivElement | undefined;
 
-	const syncScroll = () => {
+	const getScrollElement = () => {
+		if (props.readonly && props.externallyScrolled) return undefined;
+		return props.readonly ? highlightRef : textareaRef;
+	};
+
+	const handleTextareaScroll = () => {
 		if (!textareaRef) return;
 
 		if (highlightRef) {
@@ -121,18 +128,43 @@ export function ColorEditor(props: ColorEditorProps) {
 		});
 	};
 
+	const handleHighlightScroll: JSX.EventHandlerUnion<HTMLDivElement, Event> = () => {
+		if (!highlightRef || !props.readonly || props.externallyScrolled) return;
+
+		props.onScrollPositionChange?.({
+			top: highlightRef.scrollTop,
+			left: highlightRef.scrollLeft,
+		});
+	};
+
+	createEffect(() => {
+		const target = props.scrollTop;
+		const scrollElement = getScrollElement();
+		if (target === undefined || !scrollElement || scrollElement.scrollTop === target) return;
+
+		scrollElement.scrollTop = target;
+	});
+
 	onMount(() => {
-		syncScroll();
+		if (props.readonly) {
+			handleHighlightScroll(new Event('scroll') as any);
+			return;
+		}
+
+		handleTextareaScroll();
 	});
 
 	return (
-		<div class="relative flex-1 min-h-full editor w-full">
+		<div class={cn('relative min-h-full w-full editor', !props.externallyScrolled && 'flex-1')}>
 			<div
 				ref={highlightRef}
 				class={cn(
 					'pointer-events-none absolute inset-0 overflow-hidden',
-					props.readonly && 'relative pointer-events-auto overflow-auto',
+					props.readonly && 'relative',
+					props.readonly && !props.externallyScrolled && 'pointer-events-auto overflow-auto',
+					props.readonly && props.externallyScrolled && 'overflow-visible',
 				)}
+				onScroll={handleHighlightScroll}
 				aria-hidden="true"
 			>
 				<TokenizedCode
@@ -152,7 +184,7 @@ export function ColorEditor(props: ColorEditorProps) {
 					)}
 					value={props.value}
 					onInput={(event) => props.onInput?.(event.currentTarget.value)}
-					onScroll={syncScroll}
+					onScroll={handleTextareaScroll}
 					placeholder={props.placeholder}
 					spellcheck={false}
 					autocapitalize="off"

@@ -33,7 +33,6 @@ function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
 
 	const updateVisibleRows = () => {
 		if (!ref) return;
-		console.log('updateVisibleRows', ref);
 		setVisibleRows(Math.max(1, Math.ceil(ref.clientHeight / 20)));
 	};
 
@@ -101,6 +100,10 @@ export default function App() {
 	const [copied, setCopied] = createSignal(false);
 	const [activeMobilePane, setActiveMobilePane] = createSignal<'input' | 'output'>('input');
 	const [inputScrollTop, setInputScrollTop] = createSignal(0);
+	const [outputScrollTop, setOutputScrollTop] = createSignal(0);
+	const [isShiftPressed, setIsShiftPressed] = createSignal(false);
+
+	let outputScrollContainerRef: HTMLDivElement | undefined;
 
 	let copyResetTimer: number | undefined;
 
@@ -121,6 +124,32 @@ export default function App() {
 		setIsDark(initialDark);
 		setShowChips(storedHighlight === null ? true : storedHighlight === 'true');
 		document.documentElement.classList.toggle('dark', initialDark);
+
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'Shift') {
+				setIsShiftPressed(true);
+			}
+		};
+
+		const handleKeyUp = (event: KeyboardEvent) => {
+			if (event.key === 'Shift') {
+				setIsShiftPressed(false);
+			}
+		};
+
+		const handleWindowBlur = () => {
+			setIsShiftPressed(false);
+		};
+
+		window.addEventListener('keydown', handleKeyDown);
+		window.addEventListener('keyup', handleKeyUp);
+		window.addEventListener('blur', handleWindowBlur);
+
+		onCleanup(() => {
+			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('keyup', handleKeyUp);
+			window.removeEventListener('blur', handleWindowBlur);
+		});
 	});
 
 	createEffect(() => {
@@ -182,6 +211,34 @@ export default function App() {
 	const handleInputClear = () => {
 		setInput('');
 		setCopied(false);
+	};
+
+	createEffect(() => {
+		if (!outputScrollContainerRef) return;
+		const top = outputScrollTop();
+		if (outputScrollContainerRef.scrollTop !== top) {
+			outputScrollContainerRef.scrollTop = top;
+		}
+	});
+
+	const syncPaneScroll = (nextScrollTop: number) => {
+		setInputScrollTop(nextScrollTop);
+		setOutputScrollTop(nextScrollTop);
+	};
+
+	const handleInputScroll = ({ top }: { top: number; left: number }) => {
+		setInputScrollTop(top);
+		if (isShiftPressed()) {
+			syncPaneScroll(top);
+		}
+	};
+
+	const handleOutputScroll = (event: Event) => {
+		const nextScrollTop = (event.currentTarget as HTMLDivElement).scrollTop;
+		setOutputScrollTop(nextScrollTop);
+		if (isShiftPressed()) {
+			syncPaneScroll(nextScrollTop);
+		}
 	};
 
 	const isInputMobileActive = createMemo(() => activeMobilePane() === 'input');
@@ -260,7 +317,8 @@ export default function App() {
 									colorTokens={colorTokens()}
 									side="input"
 									placeholder="Paste your Tailwind CSS variables here…"
-									onScrollPositionChange={({ top }) => setInputScrollTop(top)}
+									scrollTop={inputScrollTop()}
+									onScrollPositionChange={handleInputScroll}
 								/>
 							</div>
 						</div>
@@ -294,7 +352,11 @@ export default function App() {
 						</Show>
 					</div>
 
-					<div class="flex flex-1 overflow-auto">
+					<div
+						ref={outputScrollContainerRef}
+						class="flex flex-1 overflow-auto"
+						onScroll={handleOutputScroll}
+					>
 						<Show
 							when={state().status === 'valid' && outputValue()}
 							fallback={
@@ -324,6 +386,8 @@ export default function App() {
 										showChips={showChips()}
 										colorTokens={colorTokens()}
 										side="output"
+										externallyScrolled={true}
+										onScrollPositionChange={() => undefined}
 									/>
 								</div>
 							</div>
