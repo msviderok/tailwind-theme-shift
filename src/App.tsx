@@ -14,6 +14,7 @@ import { PLACEHOLDER } from './placeholder';
 const STORAGE_KEYS = {
 	theme: 'hsl-to-oklch.theme',
 	highlight: 'hsl-to-oklch.highlight',
+	input: 'hsl-to-oklch.input',
 } as const;
 
 type DerivedState =
@@ -94,7 +95,9 @@ function EmptyOutputState(props: { message: string; detail?: string; invalid?: b
 }
 
 export default function App() {
-	const [input, setInput] = createSignal('');
+	const [input, setInput] = createSignal(
+		typeof window === 'undefined' ? '' : (window.localStorage.getItem(STORAGE_KEYS.input) ?? ''),
+	);
 	const [showChips, setShowChips] = createSignal(true);
 	const [isDark, setIsDark] = createSignal(true);
 	const [copied, setCopied] = createSignal(false);
@@ -162,6 +165,18 @@ export default function App() {
 		window.localStorage.setItem(STORAGE_KEYS.highlight, String(showChips()));
 	});
 
+	createEffect(() => {
+		if (typeof window === 'undefined') return;
+
+		const nextInput = input();
+		if (nextInput) {
+			window.localStorage.setItem(STORAGE_KEYS.input, nextInput);
+			return;
+		}
+
+		window.localStorage.removeItem(STORAGE_KEYS.input);
+	});
+
 	const state = createMemo<DerivedState>(() => {
 		const source = input();
 		if (!source.trim()) {
@@ -226,18 +241,17 @@ export default function App() {
 		setOutputScrollTop(nextScrollTop);
 	};
 
-	const handleInputScroll = ({ top }: { top: number; left: number }) => {
-		setInputScrollTop(top);
+	const handleInputScroll = (e: { top: number; left: number }) => {
+		setInputScrollTop(e.top);
 		if (isShiftPressed()) {
-			syncPaneScroll(top);
+			syncPaneScroll(e.top);
 		}
 	};
 
-	const handleOutputScroll = (event: Event) => {
-		const nextScrollTop = (event.currentTarget as HTMLDivElement).scrollTop;
-		setOutputScrollTop(nextScrollTop);
+	const handleOutputScroll = (e: { top: number; left: number }) => {
+		setOutputScrollTop(e.top);
 		if (isShiftPressed()) {
-			syncPaneScroll(nextScrollTop);
+			syncPaneScroll(e.top);
 		}
 	};
 
@@ -308,7 +322,7 @@ export default function App() {
 					<div class="flex flex-1 overflow-auto">
 						<div class="flex min-h-full flex-1">
 							<LineNumbers lines={inputLines()} scrollTop={inputScrollTop()} />
-							<div class="flex min-h-full min-w-0 flex-1 flex-col px-5 py-4">
+							<div class="flex min-h-full min-w-0 flex-1 flex-col px-5">
 								<ColorEditor
 									value={input()}
 									onInput={setInput}
@@ -352,11 +366,7 @@ export default function App() {
 						</Show>
 					</div>
 
-					<div
-						ref={outputScrollContainerRef}
-						class="flex flex-1 overflow-auto"
-						onScroll={handleOutputScroll}
-					>
+					<div ref={outputScrollContainerRef} class="flex flex-1 overflow-auto">
 						<Show
 							when={state().status === 'valid' && outputValue()}
 							fallback={
@@ -378,16 +388,16 @@ export default function App() {
 							}
 						>
 							<div class="flex min-h-full flex-1">
-								<LineNumbers lines={outputLines()} />
-								<div class="flex min-h-full min-w-0 flex-1 flex-col px-5 py-4">
+								<LineNumbers lines={outputLines()} scrollTop={outputScrollTop()} />
+								<div class="flex min-h-full min-w-0 flex-1 flex-col px-5">
 									<ColorEditor
 										value={outputValue()}
 										readonly={true}
 										showChips={showChips()}
 										colorTokens={colorTokens()}
 										side="output"
-										externallyScrolled={true}
-										onScrollPositionChange={() => undefined}
+										scrollTop={outputScrollTop()}
+										onScrollPositionChange={handleOutputScroll}
 									/>
 								</div>
 							</div>

@@ -155,7 +155,7 @@ export function ColorEditor(props: ColorEditorProps) {
 	});
 
 	return (
-		<div class={cn('relative min-h-full w-full editor', !props.externallyScrolled && 'flex-1')}>
+		<div class={cn('relative min-h-full w-full editor flex-1', props.readonly && 'contents')}>
 			<div
 				ref={highlightRef}
 				class={cn(
