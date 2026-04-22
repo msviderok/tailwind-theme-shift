@@ -250,12 +250,7 @@ export default function App() {
 					</div>
 				</div>
 
-				<div class="relative hidden w-px shrink-0 bg-border md:block" aria-hidden="true">
-					<div class="absolute top-1/2 left-1/2 flex h-[52px] w-[18px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-[5px] rounded-full border border-border bg-muted">
-						<div class="size-1 rounded-full bg-muted-foreground/70" />
-						<div class="size-1 rounded-full bg-muted-foreground/70" />
-					</div>
-				</div>
+				<div class="relative hidden w-px shrink-0 bg-border md:block" aria-hidden="true" />
 
 				<div
 					class={cn(
