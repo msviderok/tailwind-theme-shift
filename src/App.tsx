@@ -1,5 +1,5 @@
 import { Code, Moon, Siren, Sun } from 'lucide-solid';
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
 import HighlightIcon from './components/HighlightIcon';
 import { Separator } from './components/ui/separator';
@@ -27,48 +27,6 @@ type DerivedState =
 			error: null;
 			kind: 'raw-hsl' | 'css';
 	  };
-
-function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
-	let ref!: HTMLDivElement;
-	const [visibleRows, setVisibleRows] = createSignal(0);
-
-	const updateVisibleRows = () => {
-		if (!ref) return;
-		setVisibleRows(Math.max(1, Math.ceil(ref.clientHeight / 20)));
-	};
-
-	createEffect(() => {
-		if (ref) {
-			ref.scrollTop = props.scrollTop ?? 0;
-		}
-	});
-
-	onMount(() => {
-		updateVisibleRows();
-
-		if (!ref) return;
-
-		const observer = new ResizeObserver(() => updateVisibleRows());
-		observer.observe(ref);
-
-		onCleanup(() => observer.disconnect());
-	});
-
-	const totalLines = createMemo(() => Math.max(props.lines.length, visibleRows(), 1));
-
-	return (
-		<div
-			ref={(el) => {
-				ref = el;
-			}}
-			class="w-12 shrink-0 overflow-hidden border-r border-border py-0 pr-3 text-right text-[13px] box-border leading-[20px] text-muted-foreground select-none"
-		>
-			<For each={Array.from({ length: totalLines() })}>
-				{(_, index) => <span class="block">{index() + 1}</span>}
-			</For>
-		</div>
-	);
-}
 
 function EmptyOutputState(props: { message: string; detail?: string; invalid?: boolean }) {
 	return (
@@ -199,8 +157,6 @@ export default function App() {
 
 	const outputValue = createMemo(() => (state().status === 'valid' ? state().output : ''));
 	const colorTokens = createMemo(() => (state().status === 'valid' ? state().tokens : []));
-	const inputLines = createMemo(() => input().split('\n'));
-	const outputLines = createMemo(() => outputValue().split('\n'));
 
 	const handleCopy = async () => {
 		const text = outputValue();
@@ -234,6 +190,10 @@ export default function App() {
 		if (outputScrollContainerRef.scrollTop !== top) {
 			outputScrollContainerRef.scrollTop = top;
 		}
+	});
+
+	createEffect(() => {
+		document.documentElement.classList.toggle('dark', isDark());
 	});
 
 	const syncPaneScroll = (nextScrollTop: number) => {
@@ -320,22 +280,17 @@ export default function App() {
 					</div>
 
 					<div class="flex flex-1 overflow-auto">
-						<div class="flex min-h-full flex-1">
-							<LineNumbers lines={inputLines()} scrollTop={inputScrollTop()} />
-							<div class="flex min-h-full min-w-0 flex-1 flex-col px-5">
-								<ColorEditor
-									value={input()}
-									onInput={setInput}
-									readonly={false}
-									showChips={showChips()}
-									colorTokens={colorTokens()}
-									side="input"
-									placeholder="Paste your Tailwind CSS variables here…"
-									scrollTop={inputScrollTop()}
-									onScrollPositionChange={handleInputScroll}
-								/>
-							</div>
-						</div>
+						<ColorEditor
+							value={input()}
+							onInput={setInput}
+							readonly={false}
+							showChips={showChips()}
+							colorTokens={colorTokens()}
+							side="input"
+							placeholder="Paste your Tailwind CSS variables here…"
+							scrollTop={inputScrollTop()}
+							onScrollPositionChange={handleInputScroll}
+						/>
 					</div>
 				</div>
 
@@ -387,20 +342,15 @@ export default function App() {
 								</Show>
 							}
 						>
-							<div class="flex min-h-full flex-1">
-								<LineNumbers lines={outputLines()} scrollTop={outputScrollTop()} />
-								<div class="flex min-h-full min-w-0 flex-1 flex-col px-5">
-									<ColorEditor
-										value={outputValue()}
-										readonly={true}
-										showChips={showChips()}
-										colorTokens={colorTokens()}
-										side="output"
-										scrollTop={outputScrollTop()}
-										onScrollPositionChange={handleOutputScroll}
-									/>
-								</div>
-							</div>
+							<ColorEditor
+								value={outputValue()}
+								readonly={true}
+								showChips={showChips()}
+								colorTokens={colorTokens()}
+								side="output"
+								scrollTop={outputScrollTop()}
+								onScrollPositionChange={handleOutputScroll}
+							/>
 						</Show>
 					</div>
 				</div>
@@ -415,11 +365,8 @@ export default function App() {
 									<Switch
 										{...p}
 										checked={isDark()}
-										onCheckedChange={(nextDark) => {
-											document.documentElement.classList.toggle('dark', nextDark);
-											setIsDark(nextDark);
-										}}
-										aria-label={isDark() ? 'Switch to light theme' : 'Switch to dark theme'}
+										onCheckedChange={setIsDark}
+										aria-label={`Switch to ${isDark() ? 'light' : 'dark'} theme`}
 										class={cn(
 											p.class,
 											'data-unchecked:text-darkyellow data-unchecked:border-darkyellow/50 data-unchecked:bg-darkyellow/90',

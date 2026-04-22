@@ -1,5 +1,5 @@
 import type { JSX } from 'solid-js';
-import { For, Show, createEffect, createMemo, onMount } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import type { ColorToken } from '../lib/parseHslColors';
 import type { DisplayToken } from '../lib/syntaxTokenizer';
 import { tokenizeLine } from '../lib/syntaxTokenizer';
@@ -16,6 +16,49 @@ interface ColorEditorProps {
 	scrollTop?: number;
 	externallyScrolled?: boolean;
 	onScrollPositionChange?: (position: { top: number; left: number }) => void;
+}
+
+function LineNumbers(props: { value: string; scrollTop?: number }) {
+	let ref!: HTMLDivElement;
+	const [visibleRows, setVisibleRows] = createSignal(0);
+	const lines = createMemo(() => props.value.split('\n'));
+
+	const updateVisibleRows = () => {
+		if (!ref) return;
+		setVisibleRows(Math.max(1, Math.ceil(ref.clientHeight / 20)));
+	};
+
+	createEffect(() => {
+		if (ref) {
+			ref.scrollTop = props.scrollTop ?? 0;
+		}
+	});
+
+	onMount(() => {
+		updateVisibleRows();
+
+		if (!ref) return;
+
+		const observer = new ResizeObserver(() => updateVisibleRows());
+		observer.observe(ref);
+
+		onCleanup(() => observer.disconnect());
+	});
+
+	const totalLines = createMemo(() => Math.max(lines().length, visibleRows(), 1));
+
+	return (
+		<div
+			ref={(el) => {
+				ref = el;
+			}}
+			class="w-12 shrink-0 overflow-hidden border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none"
+		>
+			<For each={Array.from({ length: totalLines() })}>
+				{(_, index) => <span class="block">{index() + 1}</span>}
+			</For>
+		</div>
+	);
 }
 
 function getTokenClass(token: DisplayToken) {
@@ -155,43 +198,46 @@ export function ColorEditor(props: ColorEditorProps) {
 	});
 
 	return (
-		<div class={cn('relative min-h-full w-full editor flex-1', props.readonly && 'contents')}>
-			<div
-				ref={highlightRef}
-				class={cn(
-					'pointer-events-none absolute inset-0 overflow-hidden',
-					props.readonly && 'relative',
-					props.readonly && !props.externallyScrolled && 'pointer-events-auto overflow-auto',
-					props.readonly && props.externallyScrolled && 'overflow-visible',
-				)}
-				onScroll={handleHighlightScroll}
-				aria-hidden="true"
-			>
-				<TokenizedCode
-					value={props.value}
-					colorTokens={props.colorTokens}
-					side={props.side}
-					showChips={props.showChips}
-					placeholder={props.placeholder}
-				/>
-			</div>
-			<Show when={!props.readonly}>
-				<textarea
-					ref={textareaRef}
+		<div class={cn('flex min-h-full w-full flex-1', props.readonly && 'contents')}>
+			<LineNumbers value={props.value} scrollTop={props.scrollTop} />
+			<div class="relative min-h-full flex-1 px-5 editor">
+				<div
+					ref={highlightRef}
 					class={cn(
-						'absolute inset-0 h-full w-full resize-none border border-transparent bg-transparent p-0 outline-none',
-						'caret-primary placeholder:text-transparent text-transparent',
+						'pointer-events-none absolute inset-0 overflow-hidden',
+						props.readonly && 'relative',
+						props.readonly && !props.externallyScrolled && 'pointer-events-auto overflow-auto',
+						props.readonly && props.externallyScrolled && 'overflow-visible',
 					)}
-					value={props.value}
-					onInput={(event) => props.onInput?.(event.currentTarget.value)}
-					onScroll={handleTextareaScroll}
-					placeholder={props.placeholder}
-					spellcheck={false}
-					autocapitalize="off"
-					autocomplete="off"
-					autocorrect="off"
-				/>
-			</Show>
+					onScroll={handleHighlightScroll}
+					aria-hidden="true"
+				>
+					<TokenizedCode
+						value={props.value}
+						colorTokens={props.colorTokens}
+						side={props.side}
+						showChips={props.showChips}
+						placeholder={props.placeholder}
+					/>
+				</div>
+				<Show when={!props.readonly}>
+					<textarea
+						ref={textareaRef}
+						class={cn(
+							'absolute inset-0 h-full w-full resize-none border border-transparent bg-transparent p-0 outline-none',
+							'caret-primary placeholder:text-transparent text-transparent',
+						)}
+						value={props.value}
+						onInput={(event) => props.onInput?.(event.currentTarget.value)}
+						onScroll={handleTextareaScroll}
+						placeholder={props.placeholder}
+						spellcheck={false}
+						autocapitalize="off"
+						autocomplete="off"
+						autocorrect="off"
+					/>
+				</Show>
+			</div>
 		</div>
 	);
 }
