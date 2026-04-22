@@ -1,4 +1,4 @@
-import { Highlighter, LightbulbOff, Sun, X } from 'lucide-solid';
+import { Sun, Moon, Siren, Code } from 'lucide-solid';
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
 import { Switch } from './components/ui/switch';
@@ -6,6 +6,8 @@ import type { ColorToken } from './lib/parseHslColors';
 import { convertHslToOklchCss, convertRawHsl } from './lib/parseHslColors';
 import { cn } from './lib/utils';
 import { validate } from './lib/validateTailwindTheme';
+import HighlightIcon from './components/HighlightIcon';
+import { Separator } from './components/ui/separator';
 
 const PLACEHOLDER = `:root {
   --background: 0 0% 100%;
@@ -20,6 +22,11 @@ const PLACEHOLDER = `:root {
   --destructive: 0 84.2% 60.2%;
   --border: 214.3 31.8% 91.4%;
 }`;
+
+const STORAGE_KEYS = {
+	theme: 'hsl-to-oklch.theme',
+	highlight: 'hsl-to-oklch.highlight',
+} as const;
 
 type DerivedState =
 	| { status: 'empty'; output: ''; tokens: []; error: null; kind: 'css' }
@@ -38,7 +45,8 @@ function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
 
 	const updateVisibleRows = () => {
 		if (!ref) return;
-		setVisibleRows(Math.max(1, Math.ceil(ref.clientHeight / 21)));
+		console.log('updateVisibleRows', ref);
+		setVisibleRows(Math.max(1, Math.ceil(ref.clientHeight / 20)));
 	};
 
 	createEffect(() => {
@@ -63,7 +71,7 @@ function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
 	return (
 		<div
 			ref={ref}
-			class="w-12 shrink-0 overflow-hidden border-r border-border pr-3 text-right font-mono text-xs leading-[20px] text-muted-foreground select-none"
+			class="w-12 shrink-0 overflow-hidden border-r border-border py-4 pr-3 text-right text-[13px] box-border leading-[20px] text-muted-foreground select-none"
 		>
 			<For each={Array.from({ length: totalLines() })}>
 				{(_, index) => <span class="block">{index() + 1}</span>}
@@ -72,13 +80,20 @@ function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
 	);
 }
 
-function EmptyOutputState(props: { message: string; detail?: string }) {
+function EmptyOutputState(props: { message: string; detail?: string; invalid?: boolean }) {
 	return (
-		<div class="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center text-muted-foreground/60">
-			<div class="grid size-10 place-items-center rounded-lg border border-dashed border-border font-mono text-base">
-				◈
+		<div
+			class={cn(
+				'flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center text-muted-foreground/60',
+				props.invalid && 'text-destructive',
+			)}
+		>
+			<div class="grid size-20 place-items-center rounded-lg border border-dashed border-current text-3xl">
+				<Show when={props.invalid} fallback={<Code size={30} />}>
+					<Siren size={40} />
+				</Show>
 			</div>
-			<div class="text-xs leading-[1.7]">
+			<div class="text-base leading-[1.7] text-current">
 				{props.message}
 				<Show when={props.detail}>
 					<br />
@@ -92,9 +107,7 @@ function EmptyOutputState(props: { message: string; detail?: string }) {
 export default function App() {
 	const [input, setInput] = createSignal('');
 	const [showChips, setShowChips] = createSignal(true);
-	const [isDark, setIsDark] = createSignal(
-		typeof document === 'undefined' ? true : document.documentElement.classList.contains('dark'),
-	);
+	const [isDark, setIsDark] = createSignal(true);
 	const [copied, setCopied] = createSignal(false);
 	const [activeMobilePane, setActiveMobilePane] = createSignal<'input' | 'output'>('input');
 	const [inputScrollTop, setInputScrollTop] = createSignal(0);
@@ -108,7 +121,26 @@ export default function App() {
 	});
 
 	onMount(() => {
-		document.documentElement.classList.toggle('dark', isDark());
+		const storedTheme = window.localStorage.getItem(STORAGE_KEYS.theme);
+		const storedHighlight = window.localStorage.getItem(STORAGE_KEYS.highlight);
+		const initialDark =
+			storedTheme === null
+				? document.documentElement.classList.contains('dark')
+				: storedTheme === 'dark';
+
+		setIsDark(initialDark);
+		setShowChips(storedHighlight === null ? true : storedHighlight === 'true');
+		document.documentElement.classList.toggle('dark', initialDark);
+	});
+
+	createEffect(() => {
+		if (typeof window === 'undefined') return;
+		window.localStorage.setItem(STORAGE_KEYS.theme, isDark() ? 'dark' : 'light');
+	});
+
+	createEffect(() => {
+		if (typeof window === 'undefined') return;
+		window.localStorage.setItem(STORAGE_KEYS.highlight, String(showChips()));
 	});
 
 	const state = createMemo<DerivedState>(() => {
@@ -162,15 +194,10 @@ export default function App() {
 		setCopied(false);
 	};
 
-	const applyTheme = (nextDark: boolean) => {
-		document.documentElement.classList.toggle('dark', nextDark);
-		setIsDark(nextDark);
-	};
-
 	const isInputMobileActive = createMemo(() => activeMobilePane() === 'input');
 	const isOutputMobileActive = createMemo(() => activeMobilePane() === 'output');
 	const actionButtonClass =
-		'bg-transparent p-0 font-mono text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground transition-colors hover:text-foreground';
+		'bg-transparent p-0 text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground transition-colors hover:text-foreground';
 	const paneClass = 'min-w-0 flex-1 flex-col overflow-hidden bg-card';
 
 	return (
@@ -179,7 +206,7 @@ export default function App() {
 				<button
 					type="button"
 					class={cn(
-						'flex-1 rounded-full border px-3 py-2 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors',
+						'flex-1 rounded-full border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors',
 						isInputMobileActive()
 							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
 							: 'border-border bg-muted text-muted-foreground',
@@ -191,7 +218,7 @@ export default function App() {
 				<button
 					type="button"
 					class={cn(
-						'flex-1 rounded-full border px-3 py-2 font-mono text-[11px] tracking-[0.08em] uppercase transition-colors',
+						'flex-1 rounded-full border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors',
 						isOutputMobileActive()
 							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
 							: 'border-border bg-muted text-muted-foreground',
@@ -232,9 +259,9 @@ export default function App() {
 					</div>
 
 					<div class="flex flex-1 overflow-auto">
-						<div class="flex min-h-full flex-1 py-4">
+						<div class="flex min-h-full flex-1">
 							<LineNumbers lines={inputLines()} scrollTop={inputScrollTop()} />
-							<div class="flex min-h-full min-w-0 flex-1 flex-col px-5">
+							<div class="flex min-h-full min-w-0 flex-1 flex-col px-5 py-4">
 								<ColorEditor
 									value={input()}
 									onInput={setInput}
@@ -250,7 +277,7 @@ export default function App() {
 					</div>
 				</div>
 
-				<div class="relative hidden w-px shrink-0 bg-border md:block" aria-hidden="true" />
+				<Separator orientation="vertical" />
 
 				<div
 					class={cn(
@@ -291,15 +318,16 @@ export default function App() {
 									}
 								>
 									<EmptyOutputState
-										message="Input needs attention"
+										message="Invalid syntax"
 										detail={state().status === 'invalid' ? (state().error ?? undefined) : undefined}
+										invalid={state().status === 'invalid'}
 									/>
 								</Show>
 							}
 						>
-							<div class="flex min-h-full flex-1 py-4">
+							<div class="flex min-h-full flex-1">
 								<LineNumbers lines={outputLines()} />
-								<div class="flex min-h-full min-w-0 flex-1 flex-col px-5">
+								<div class="flex min-h-full min-w-0 flex-1 flex-col px-5 py-4">
 									<ColorEditor
 										value={outputValue()}
 										readonly={true}
@@ -317,55 +345,33 @@ export default function App() {
 			<footer class="flex h-9 shrink-0 items-center border-t border-border bg-muted px-3 md:px-4">
 				<div class="ml-auto flex items-center gap-3">
 					<div class="flex items-center gap-2">
-						<span
-							class={cn(
-								'inline-flex items-center justify-center text-muted-foreground/70 transition-all',
-								isDark() && 'text-foreground opacity-100',
-							)}
-						>
-							<LightbulbOff size={13} />
-						</span>
 						<Switch
-							size="sm"
 							checked={isDark()}
-							onCheckedChange={applyTheme}
+							onCheckedChange={(nextDark) => {
+								document.documentElement.classList.toggle('dark', nextDark);
+								setIsDark(nextDark);
+							}}
 							aria-label={isDark() ? 'Switch to light theme' : 'Switch to dark theme'}
+							class="data-unchecked:text-yellow-400 data-unchecked:border-yellow-400/50 data-checked:text-sky-900 data-checked:border-sky-600/20 data-unchecked:bg-yellow-300/90 data-checked:bg-sky-900"
+							icons={{
+								on: <Moon size={13} />,
+								off: <Sun size={13} />,
+							}}
 						/>
-						<span
-							class={cn(
-								'inline-flex items-center justify-center text-muted-foreground/70 transition-all',
-								!isDark() && 'text-foreground opacity-100',
-							)}
-						>
-							<Sun size={13} />
-						</span>
 					</div>
 
 					<div class="h-3.5 w-px bg-border" />
 
 					<div class="flex items-center gap-2">
-						<span
-							class={cn(
-								'inline-flex items-center justify-center text-muted-foreground/70 transition-all',
-								!showChips() && 'text-foreground opacity-100',
-							)}
-						>
-							<X size={13} />
-						</span>
 						<Switch
-							size="sm"
 							checked={showChips()}
 							onCheckedChange={(checked) => setShowChips(checked)}
 							aria-label={showChips() ? 'Disable color chips' : 'Enable color chips'}
+							icons={{
+								on: <HighlightIcon state="on" />,
+								off: <HighlightIcon state="off" />,
+							}}
 						/>
-						<span
-							class={cn(
-								'inline-flex items-center justify-center text-muted-foreground/70 transition-all',
-								showChips() && 'text-foreground opacity-100',
-							)}
-						>
-							<Highlighter size={13} />
-						</span>
 					</div>
 				</div>
 			</footer>

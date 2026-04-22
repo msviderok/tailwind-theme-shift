@@ -7,8 +7,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-	--font-heading: var(--font-sans);
-	--font-sans: 'Outfit Variable', sans-serif;
+	--font-mono: 'JetBrains Mono', monospace;
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-card: var(--card);
@@ -28,13 +27,18 @@
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-2xl: calc(var(--radius) * 1.8);
 	--radius-4xl: calc(var(--radius) * 2.6);
+
+	--text-editor: 0.8125rem;
+	--text-editor--line-height: 1.5;
+	--text-editor--letter-spacing: 0.08em;
+	--text-editor--font-weight: 400;
 }
 
 :root {
 	--background: oklch(0.98 0.006 80);
-	--foreground: oklch(0.22 0.02 265);
+	--foreground: oklch(18.27% 0.03352 272.086);
 	--card: oklch(0.99 0.004 80);
-	--card-foreground: oklch(0.22 0.02 265);
+	--card-foreground: oklch(18.27% 0.03352 272.086);
 	--primary: oklch(0.55 0.18 290);
 	--primary-foreground: oklch(0.985 0 0);
 	--secondary: oklch(0.95 0.007 80);
@@ -57,13 +61,13 @@
 .dark {
 	--background: oklch(0.96 0.008 80);
 	--foreground: oklch(0.82 0.01 265);
-	--card: oklch(0.115 0.018 265);
+	--card: oklch(18.27% 0.03352 272.086);
 	--card-foreground: oklch(0.82 0.01 265);
 	--primary: oklch(0.68 0.16 290);
 	--primary-foreground: oklch(1 0 0);
-	--secondary: oklch(0.14 0.018 265);
+	--secondary: oklch(18.27% 0.03352 272.086);
 	--secondary-foreground: oklch(0.82 0.01 265);
-	--muted: oklch(0.14 0.018 265);
+	--muted: oklch(18.27% 0.03352 272.086);
 	--muted-foreground: oklch(0.55 0.03 265);
 	--accent: oklch(0.68 0.16 165);
 	--border: oklch(0.22 0.018 265);
@@ -73,7 +77,7 @@
 	--syntax-selector: oklch(0.75 0.08 55);
 	--syntax-prop: oklch(0.72 0.1 230);
 	--syntax-value-input: oklch(0.78 0.12 290);
-	--syntax-value-output: oklch(0.78 0.12 165);
+	--syntax-value-output: oklch(0.8698 0.0843 153.85);
 	--syntax-comment: oklch(0.58 0.06 200);
 }
 
@@ -83,10 +87,14 @@
 	}
 
 	html {
-		@apply font-sans;
+		@apply font-mono;
 	}
 
 	body {
 		@apply bg-background text-foreground;
 	}
+}
+
+@utility editor {
+	@apply text-editor leading-[20px] align-middle inline-block box-border outline-none [tab-size:2] whitespace-pre-wrap break-all p-0 border border-transparent;
 }

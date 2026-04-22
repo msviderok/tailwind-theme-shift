@@ -32,7 +32,7 @@ const InputSchema = v.pipe(
 	v.check(balanced, 'Unbalanced braces or parentheses'),
 	v.check(
 		(s) => RAW_HSL.test(s) || looksLikeCss(s),
-		"Input doesn't look like CSS or an HSL color.",
+		"Just paste your CSS here and we'll do the rest",
 	),
 );
 
