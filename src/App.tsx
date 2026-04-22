@@ -202,6 +202,7 @@ export default function App() {
 	};
 
 	const handleInputScroll = (e: { top: number; left: number }) => {
+		console.log('input', e.top);
 		setInputScrollTop(e.top);
 		if (isShiftPressed()) {
 			syncPaneScroll(e.top);
@@ -209,6 +210,7 @@ export default function App() {
 	};
 
 	const handleOutputScroll = (e: { top: number; left: number }) => {
+		console.log('output', e.top);
 		setOutputScrollTop(e.top);
 		if (isShiftPressed()) {
 			syncPaneScroll(e.top);
@@ -259,7 +261,6 @@ export default function App() {
 					)}
 				>
 					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-primary text-primary-foreground px-5">
-						<div class="size-2 rounded-full bg-muted" />
 						<span class="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">
 							Input
 						</span>
@@ -304,7 +305,6 @@ export default function App() {
 					)}
 				>
 					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-primary px-5">
-						<div class="size-2 rounded-full bg-accent" />
 						<span class="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">
 							Output
 						</span>
@@ -369,12 +369,12 @@ export default function App() {
 										aria-label={`Switch to ${isDark() ? 'light' : 'dark'} theme`}
 										class={cn(
 											p.class,
-											'data-unchecked:text-darkyellow data-unchecked:border-darkyellow/50 data-unchecked:bg-darkyellow/90',
+											'data-unchecked:text-secondary data-unchecked:bg-secondary',
 											'data-checked:text-darkblue data-checked:border-darkblue/20 data-checked:bg-darkblue',
 										)}
 										icons={{
 											on: <Moon size={12} />,
-											off: <Sun size={12} />,
+											off: <Sun size={12} class="stroke-3" />,
 										}}
 									/>
 								)}

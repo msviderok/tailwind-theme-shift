@@ -46,7 +46,7 @@ function LineNumbers(props: { readonly: boolean; value: string; scrollTop?: numb
 				ref = el;
 			}}
 			class={cn(
-				'w-12 shrink-0 border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none bg-primary/25',
+				'w-12 shrink-0 border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none bg-primary/25 h-full',
 				!props.readonly && 'overflow-hidden',
 			)}
 		>
@@ -144,27 +144,19 @@ export function ColorEditor(props: ColorEditorProps) {
 			highlightRef.scrollLeft = textareaRef.scrollLeft;
 		}
 
-		props.onScrollPositionChange?.({
-			top: textareaRef.scrollTop,
-			left: textareaRef.scrollLeft,
-		});
+		props.onScrollPositionChange?.({ top: textareaRef.scrollTop, left: textareaRef.scrollLeft });
 	};
 
 	const handleHighlightScroll: JSX.EventHandlerUnion<HTMLDivElement, Event> = () => {
 		if (!highlightRef || !props.readonly || props.externallyScrolled) return;
-
-		props.onScrollPositionChange?.({
-			top: highlightRef.scrollTop,
-			left: highlightRef.scrollLeft,
-		});
+		props.onScrollPositionChange?.({ top: highlightRef.scrollTop, left: highlightRef.scrollLeft });
 	};
 
 	createEffect(() => {
-		const target = props.scrollTop;
+		const top = props.scrollTop;
 		const scrollElement = getScrollElement();
-		if (target === undefined || !scrollElement || scrollElement.scrollTop === target) return;
-
-		scrollElement.scrollTop = target;
+		if (top === undefined || !scrollElement || scrollElement.scrollTop === top) return;
+		scrollElement.scrollTop = top;
 	});
 
 	onMount(() => {
@@ -177,19 +169,19 @@ export function ColorEditor(props: ColorEditorProps) {
 	});
 
 	return (
-		<div class={cn('flex min-h-full w-full flex-1', props.readonly && '')}>
+		<div class={cn('flex flex-1 gap-2 h-full', props.readonly && 'h-min')}>
 			<LineNumbers readonly={props.readonly} value={props.value} scrollTop={props.scrollTop} />
-			<div class="relative min-h-full flex-1 editor">
+			<div class="relative text-editor leading-[20px] align-middle inline-block box-border outline-none [tab-size:2] whitespace-pre-wrap break-all p-0 border border-transparent w-full">
 				<div
 					ref={(el) => {
 						highlightRef = el;
 					}}
 					class={cn(
-						'pointer-events-none absolute inset-0 overflow-hidden px-2',
-						props.readonly && 'relative',
+						'relative',
+						!props.readonly && 'absolute inset-0 overflow-hidden pointer-events-none',
 					)}
-					onScroll={handleHighlightScroll}
 					aria-hidden="true"
+					onScroll={handleHighlightScroll}
 				>
 					<TokenizedCode
 						value={props.value}

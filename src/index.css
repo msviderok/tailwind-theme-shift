@@ -1,7 +1,6 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/outfit';
 @import '@fontsource/jetbrains-mono';
 
 @custom-variant dark (&:is(.dark *));
@@ -24,7 +23,6 @@
 	--color-ring: var(--ring);
 	--color-destructive: var(--destructive);
 	--color-darkblue: var(--darkblue);
-	--color-darkyellow: var(--darkyellow);
 	--color-darkgray: var(--darkgray);
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
@@ -44,7 +42,7 @@
 	--card-foreground: oklch(18.27% 0.03352 272.086);
 	--primary: oklch(0.794 0.078 299.85);
 	--primary-foreground: oklch(0.985 0 0);
-	--secondary: oklch(0.95 0.007 80);
+	--secondary: oklch(0.826 0.153 95.87);
 	--secondary-foreground: oklch(0.22 0.02 265);
 	--muted: oklch(0.927 0.003 107.36);
 	--muted-foreground: oklch(0.55 0.014 285.8);
@@ -60,7 +58,6 @@
 	--syntax-value-output: oklch(0.38 0.14 165);
 	--syntax-comment: oklch(0.52 0.08 200);
 	--darkblue: oklch(35% 0.11 260);
-	--darkyellow: oklch(82% 0.15 85);
 	--darkgray: oklch(25% 0.03 285);
 }
 
@@ -86,7 +83,6 @@
 	--syntax-value-output: oklch(0.8698 0.0843 153.85);
 	--syntax-comment: oklch(0.58 0.06 200);
 	--darkblue: oklch(35% 0.11 260);
-	--darkyellow: oklch(82% 0.15 85);
 	--darkgray: oklch(25% 0.03 285);
 }
 
@@ -102,8 +98,4 @@
 	body {
 		@apply bg-background text-foreground;
 	}
-}
-
-@utility editor {
-	@apply text-editor leading-[20px] align-middle inline-block box-border outline-none [tab-size:2] whitespace-pre-wrap break-all p-0 border border-transparent;
 }
