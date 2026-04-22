@@ -1,27 +1,15 @@
-import { Sun, Moon, Siren, Code } from 'lucide-solid';
+import { Code, Moon, Siren, Sun } from 'lucide-solid';
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
+import HighlightIcon from './components/HighlightIcon';
+import { Separator } from './components/ui/separator';
 import { Switch } from './components/ui/switch';
+import { Tooltip, TooltipContent, TooltipTrigger } from './components/ui/tooltip';
 import type { ColorToken } from './lib/parseHslColors';
 import { convertHslToOklchCss, convertRawHsl } from './lib/parseHslColors';
 import { cn } from './lib/utils';
 import { validate } from './lib/validateTailwindTheme';
-import HighlightIcon from './components/HighlightIcon';
-import { Separator } from './components/ui/separator';
-
-const PLACEHOLDER = `:root {
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
-  --primary: 222.2 47.4% 11.2%;
-  --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
-  --destructive: 0 84.2% 60.2%;
-  --border: 214.3 31.8% 91.4%;
-}`;
+import { PLACEHOLDER } from './placeholder';
 
 const STORAGE_KEYS = {
 	theme: 'hsl-to-oklch.theme',
@@ -40,7 +28,7 @@ type DerivedState =
 	  };
 
 function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
-	let ref: HTMLDivElement | undefined;
+	let ref!: HTMLDivElement;
 	const [visibleRows, setVisibleRows] = createSignal(0);
 
 	const updateVisibleRows = () => {
@@ -70,8 +58,10 @@ function LineNumbers(props: { lines: string[]; scrollTop?: number }) {
 
 	return (
 		<div
-			ref={ref}
-			class="w-12 shrink-0 overflow-hidden border-r border-border py-4 pr-3 text-right text-[13px] box-border leading-[20px] text-muted-foreground select-none"
+			ref={(el) => {
+				ref = el;
+			}}
+			class="w-12 shrink-0 overflow-hidden border-r border-border py-0 pr-3 text-right text-[13px] box-border leading-[20px] text-muted-foreground select-none"
 		>
 			<For each={Array.from({ length: totalLines() })}>
 				{(_, index) => <span class="block">{index() + 1}</span>}
@@ -345,33 +335,57 @@ export default function App() {
 			<footer class="flex h-9 shrink-0 items-center border-t border-border bg-muted px-3 md:px-4">
 				<div class="ml-auto flex items-center gap-3">
 					<div class="flex items-center gap-2">
-						<Switch
-							checked={isDark()}
-							onCheckedChange={(nextDark) => {
-								document.documentElement.classList.toggle('dark', nextDark);
-								setIsDark(nextDark);
-							}}
-							aria-label={isDark() ? 'Switch to light theme' : 'Switch to dark theme'}
-							class="data-unchecked:text-yellow-400 data-unchecked:border-yellow-400/50 data-checked:text-sky-900 data-checked:border-sky-600/20 data-unchecked:bg-yellow-300/90 data-checked:bg-sky-900"
-							icons={{
-								on: <Moon size={13} />,
-								off: <Sun size={13} />,
-							}}
-						/>
+						<Tooltip>
+							<TooltipTrigger
+								render={(p) => (
+									<Switch
+										{...p}
+										checked={isDark()}
+										onCheckedChange={(nextDark) => {
+											document.documentElement.classList.toggle('dark', nextDark);
+											setIsDark(nextDark);
+										}}
+										aria-label={isDark() ? 'Switch to light theme' : 'Switch to dark theme'}
+										class={cn(
+											p.class,
+											'data-unchecked:text-darkyellow data-unchecked:border-darkyellow/50 data-unchecked:bg-darkyellow/90',
+											'data-checked:text-darkblue data-checked:border-darkblue/20 data-checked:bg-darkblue',
+										)}
+										icons={{
+											on: <Moon size={12} />,
+											off: <Sun size={12} />,
+										}}
+									/>
+								)}
+							/>
+
+							<TooltipContent>Switch to {isDark() ? 'light' : 'dark'} theme</TooltipContent>
+						</Tooltip>
 					</div>
 
-					<div class="h-3.5 w-px bg-border" />
+					<Separator orientation="vertical" />
 
 					<div class="flex items-center gap-2">
-						<Switch
-							checked={showChips()}
-							onCheckedChange={(checked) => setShowChips(checked)}
-							aria-label={showChips() ? 'Disable color chips' : 'Enable color chips'}
-							icons={{
-								on: <HighlightIcon state="on" />,
-								off: <HighlightIcon state="off" />,
-							}}
-						/>
+						<Tooltip>
+							<TooltipTrigger
+								render={(p) => (
+									<Switch
+										{...p}
+										checked={showChips()}
+										onCheckedChange={(checked) => setShowChips(checked)}
+										aria-label={showChips() ? 'Do not highlight colors' : 'Highlight colors'}
+										class={cn(p.class, 'data-unchecked:bg-slate-700')}
+										icons={{
+											on: <HighlightIcon state="on" width={12} height={12} />,
+											off: <HighlightIcon state="off" width={12} height={12} />,
+										}}
+									/>
+								)}
+							/>
+							<TooltipContent>
+								{showChips() ? 'Do not highlight colors' : 'Highlight colors'}
+							</TooltipContent>
+						</Tooltip>
 					</div>
 				</div>
 			</footer>

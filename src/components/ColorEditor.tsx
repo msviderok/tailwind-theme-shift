@@ -40,22 +40,18 @@ function getTokenClass(token: DisplayToken) {
 }
 
 function TokenSpan(props: { token: DisplayToken }): JSX.Element {
+	const isBadge = () => props.token.type === 'val-color-badge';
 	return (
 		<span
 			class={cn(
 				getTokenClass(props.token),
-				props.token.type === 'val-color-badge' &&
-					'rounded-[3px] px-[5px] transition-[background,color]',
+				isBadge() &&
+					'relative before:transition-[background,color] before:content-[""] before:absolute before:top-0 before:left-0 before:w-full before:z-[-1] before:h-[calc(100%-2px)] before:border before:border-(--b) before:rounded-[3px] before:px-[5px] before:box-content before:bg-(--bg) z-0',
 			)}
 			style={{
-				'background-color':
-					props.token.type === 'val-color-badge' ? (props.token.css ?? 'transparent') : undefined,
-				color:
-					props.token.type === 'val-color-badge' ? `contrast-color(${props.token.css})` : undefined,
-				border:
-					props.token.type === 'val-color-badge'
-						? `1px solid contrast-color(${props.token.css})`
-						: undefined,
+				color: isBadge() ? `contrast-color(${props.token.css})` : undefined,
+				'--bg': isBadge() ? (props.token.css ?? 'transparent') : undefined,
+				'--b': isBadge() ? `contrast-color(${props.token.css})` : undefined,
 			}}
 		>
 			{props.token.text}
@@ -151,8 +147,8 @@ export function ColorEditor(props: ColorEditorProps) {
 				<textarea
 					ref={textareaRef}
 					class={cn(
-						'absolute inset-0 h-full w-full resize-none border text-transparent border-transparent bg-transparent p-0 outline-none',
-						'caret-primary placeholder:text-transparent',
+						'absolute inset-0 h-full w-full resize-none border border-transparent bg-transparent p-0 outline-none',
+						'caret-primary placeholder:text-transparent text-transparent',
 					)}
 					value={props.value}
 					onInput={(event) => props.onInput?.(event.currentTarget.value)}

@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { Show, splitProps, type JSX } from 'solid-js';
 
 interface HighlightIconProps extends JSX.SvgSVGAttributes<SVGSVGElement> {
@@ -19,9 +20,12 @@ export default function HighlightIcon(props: HighlightIconProps) {
 			<path d="m10 6-6 6 6 6" stroke={local.state === 'on' ? '#c084fc' : '#9ca3af'} />
 			<path d="m14 6 6 6-6 6" stroke={local.state === 'on' ? '#c084fc' : '#9ca3af'} />
 			<path d="m13 9-2 6" stroke={local.state === 'on' ? '#38bdf8' : '#9ca3af'} />
-			<Show when={local.state === 'off'}>
-				<path d="m5 5 15 15" stroke="#9ca3af" />
-			</Show>
+			<path
+				d="m5 5 15 15"
+				stroke="#9ca3af"
+				opacity={local.state === 'off' ? 1 : 0}
+				class="transition-opacity"
+			/>
 		</svg>
 	);
 }

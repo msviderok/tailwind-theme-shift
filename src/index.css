@@ -23,6 +23,9 @@
 	--color-input: var(--input);
 	--color-ring: var(--ring);
 	--color-destructive: var(--destructive);
+	--color-darkblue: var(--darkblue);
+	--color-darkyellow: var(--darkyellow);
+	--color-darkgray: var(--darkgray);
 	--radius-sm: calc(var(--radius) * 0.6);
 	--radius-md: calc(var(--radius) * 0.8);
 	--radius-2xl: calc(var(--radius) * 1.8);
@@ -39,7 +42,7 @@
 	--foreground: oklch(18.27% 0.03352 272.086);
 	--card: oklch(0.99 0.004 80);
 	--card-foreground: oklch(18.27% 0.03352 272.086);
-	--primary: oklch(0.55 0.18 290);
+	--primary: oklch(0.68 0.16 290);
 	--primary-foreground: oklch(0.985 0 0);
 	--secondary: oklch(0.95 0.007 80);
 	--secondary-foreground: oklch(0.22 0.02 265);
@@ -56,6 +59,9 @@
 	--syntax-value-input: oklch(0.48 0.15 290);
 	--syntax-value-output: oklch(0.38 0.14 165);
 	--syntax-comment: oklch(0.52 0.08 200);
+	--darkblue: oklch(35% 0.11 260);
+	--darkyellow: oklch(82% 0.15 85);
+	--darkgray: oklch(25% 0.03 285);
 }
 
 .dark {
@@ -79,6 +85,9 @@
 	--syntax-value-input: oklch(0.78 0.12 290);
 	--syntax-value-output: oklch(0.8698 0.0843 153.85);
 	--syntax-comment: oklch(0.58 0.06 200);
+	--darkblue: oklch(35% 0.11 260);
+	--darkyellow: oklch(82% 0.15 85);
+	--darkgray: oklch(25% 0.03 285);
 }
 
 @layer base {
