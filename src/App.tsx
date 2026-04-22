@@ -230,7 +230,7 @@ export default function App() {
 						'flex-1 rounded-full border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors',
 						isInputMobileActive()
 							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
-							: 'border-border bg-muted text-muted-foreground',
+							: 'border-border bg-primary text-muted-foreground',
 					)}
 					onClick={() => setActiveMobilePane('input')}
 				>
@@ -242,7 +242,7 @@ export default function App() {
 						'flex-1 rounded-full border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors',
 						isOutputMobileActive()
 							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
-							: 'border-border bg-muted text-muted-foreground',
+							: 'border-border bg-primary text-muted-foreground',
 					)}
 					onClick={() => setActiveMobilePane('output')}
 				>
@@ -258,8 +258,8 @@ export default function App() {
 						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex',
 					)}
 				>
-					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-muted px-5">
-						<div class="size-2 rounded-full bg-primary" />
+					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-primary text-primary-foreground px-5">
+						<div class="size-2 rounded-full bg-muted" />
 						<span class="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">
 							Input
 						</span>
@@ -303,7 +303,7 @@ export default function App() {
 						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex',
 					)}
 				>
-					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-muted px-5">
+					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-primary px-5">
 						<div class="size-2 rounded-full bg-accent" />
 						<span class="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">
 							Output
@@ -356,7 +356,7 @@ export default function App() {
 				</div>
 			</div>
 
-			<footer class="flex h-9 shrink-0 items-center border-t border-border bg-muted px-3 md:px-4">
+			<footer class="flex h-9 shrink-0 items-center border-t border-border bg-primary px-3 md:px-4">
 				<div class="ml-auto flex items-center gap-3">
 					<div class="flex items-center gap-2">
 						<Tooltip>

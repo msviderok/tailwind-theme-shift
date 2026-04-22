@@ -11,7 +11,7 @@ function Separator(props: SeparatorPrimitive.Props) {
 			data-slot="separator"
 			orientation={local.orientation}
 			class={cn(
-				'shrink-0 bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch',
+				'shrink-0 bg-border dark:bg-border data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch',
 				local.class,
 			)}
 			{...rest}

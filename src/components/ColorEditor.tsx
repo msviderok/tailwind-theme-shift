@@ -18,7 +18,7 @@ interface ColorEditorProps {
 	onScrollPositionChange?: (position: { top: number; left: number }) => void;
 }
 
-function LineNumbers(props: { value: string; scrollTop?: number }) {
+function LineNumbers(props: { readonly: boolean; value: string; scrollTop?: number }) {
 	let ref!: HTMLDivElement;
 	const [visibleRows, setVisibleRows] = createSignal(0);
 	const lines = createMemo(() => props.value.split('\n'));
@@ -52,7 +52,10 @@ function LineNumbers(props: { value: string; scrollTop?: number }) {
 			ref={(el) => {
 				ref = el;
 			}}
-			class="w-12 shrink-0 overflow-hidden border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none"
+			class={cn(
+				'w-12 shrink-0 overflow-hidden border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none',
+				props.readonly && 'overflow-visible h-full',
+			)}
 		>
 			<For each={Array.from({ length: totalLines() })}>
 				{(_, index) => <span class="block">{index() + 1}</span>}
@@ -199,7 +202,7 @@ export function ColorEditor(props: ColorEditorProps) {
 
 	return (
 		<div class={cn('flex min-h-full w-full flex-1', props.readonly && 'contents')}>
-			<LineNumbers value={props.value} scrollTop={props.scrollTop} />
+			<LineNumbers readonly={props.readonly} value={props.value} scrollTop={props.scrollTop} />
 			<div class="relative min-h-full flex-1 px-5 editor">
 				<div
 					ref={highlightRef}
