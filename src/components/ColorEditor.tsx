@@ -22,30 +22,23 @@ function LineNumbers(props: { readonly: boolean; value: string; scrollTop?: numb
 	let ref!: HTMLDivElement;
 	const [visibleRows, setVisibleRows] = createSignal(0);
 	const lines = createMemo(() => props.value.split('\n'));
+	const totalLines = createMemo(() => Math.max(lines().length, visibleRows(), 1));
 
-	const updateVisibleRows = () => {
-		if (!ref) return;
+	function updateVisibleRows() {
 		setVisibleRows(Math.max(1, Math.ceil(ref.clientHeight / 20)));
-	};
+	}
 
 	createEffect(() => {
-		if (ref) {
-			ref.scrollTop = props.scrollTop ?? 0;
-		}
+		if (!ref) return;
+		ref.scrollTop = props.scrollTop ?? 0;
 	});
 
 	onMount(() => {
 		updateVisibleRows();
-
-		if (!ref) return;
-
 		const observer = new ResizeObserver(() => updateVisibleRows());
 		observer.observe(ref);
-
 		onCleanup(() => observer.disconnect());
 	});
-
-	const totalLines = createMemo(() => Math.max(lines().length, visibleRows(), 1));
 
 	return (
 		<div
@@ -53,8 +46,8 @@ function LineNumbers(props: { readonly: boolean; value: string; scrollTop?: numb
 				ref = el;
 			}}
 			class={cn(
-				'w-12 shrink-0 overflow-hidden border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none',
-				props.readonly && 'overflow-visible h-full',
+				'w-12 shrink-0 border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none bg-primary/25',
+				!props.readonly && 'overflow-hidden',
 			)}
 		>
 			<For each={Array.from({ length: totalLines() })}>
@@ -64,37 +57,21 @@ function LineNumbers(props: { readonly: boolean; value: string; scrollTop?: numb
 	);
 }
 
-function getTokenClass(token: DisplayToken) {
-	switch (token.type) {
-		case 'selector':
-			return 'text-[var(--syntax-selector)]';
-		case 'punct':
-			return 'text-foreground/60';
-		case 'prop':
-			return 'text-[var(--syntax-prop)]';
-		case 'val-hsl':
-			return 'text-[var(--syntax-value-input)]';
-		case 'val-oklch':
-			return 'text-[var(--syntax-value-output)]';
-		case 'val-other':
-			return 'text-foreground/70';
-		case 'comment':
-			return 'text-[var(--syntax-comment)] italic';
-		case 'plain':
-			return 'text-foreground/85';
-		default:
-			return 'text-foreground/85';
-	}
-}
-
 function TokenSpan(props: { token: DisplayToken }): JSX.Element {
 	const isBadge = () => props.token.type === 'val-color-badge';
 	return (
 		<span
 			class={cn(
-				getTokenClass(props.token),
 				isBadge() &&
-					'relative before:transition-[background,color] before:content-[""] before:absolute before:top-[-2px] before:left-[-5px] before:w-full before:z-[-1] before:h-[18px] before:border before:border-(--b) before:rounded-[3px] before:px-[5px] before:box-content before:bg-(--bg) z-0',
+					'relative before:transition-[background,color] before:content-[""] before:absolute before:top-[-2px] before:left-[-5px] before:w-full before:z-[-1] before:h-[18px] before:border before:border-(--b) before:rounded-[3px] before:px-[5px] before:box-content before:bg-(--bg) z-0 text-foreground/85',
+				props.token.type === 'selector' && 'text-(--syntax-selector)',
+				props.token.type === 'punct' && 'text-foreground/60',
+				props.token.type === 'prop' && 'text-(--syntax-prop)',
+				props.token.type === 'val-hsl' && 'text-(--syntax-value-input)',
+				props.token.type === 'val-oklch' && 'text-(--syntax-value-output)',
+				props.token.type === 'val-other' && 'text-foreground/70',
+				props.token.type === 'comment' && 'text-(--syntax-comment) italic',
+				props.token.type === 'plain' && 'text-foreground/85',
 			)}
 			style={{
 				color: isBadge() ? `contrast-color(${props.token.css})` : undefined,
@@ -115,7 +92,6 @@ function tokenizeValue(
 ) {
 	const lines = value.split('\n');
 	let offset = 0;
-
 	return lines.map((line) => {
 		const lineOffset = offset;
 		offset += line.length + 1;
@@ -153,7 +129,7 @@ function TokenizedCode(props: {
 
 export function ColorEditor(props: ColorEditorProps) {
 	let textareaRef: HTMLTextAreaElement | undefined;
-	let highlightRef: HTMLDivElement | undefined;
+	let highlightRef!: HTMLDivElement;
 
 	const getScrollElement = () => {
 		if (props.readonly && props.externallyScrolled) return undefined;
@@ -201,16 +177,16 @@ export function ColorEditor(props: ColorEditorProps) {
 	});
 
 	return (
-		<div class={cn('flex min-h-full w-full flex-1', props.readonly && 'contents')}>
+		<div class={cn('flex min-h-full w-full flex-1', props.readonly && '')}>
 			<LineNumbers readonly={props.readonly} value={props.value} scrollTop={props.scrollTop} />
-			<div class="relative min-h-full flex-1 px-5 editor">
+			<div class="relative min-h-full flex-1 editor">
 				<div
-					ref={highlightRef}
+					ref={(el) => {
+						highlightRef = el;
+					}}
 					class={cn(
-						'pointer-events-none absolute inset-0 overflow-hidden',
+						'pointer-events-none absolute inset-0 overflow-hidden px-2',
 						props.readonly && 'relative',
-						props.readonly && !props.externallyScrolled && 'pointer-events-auto overflow-auto',
-						props.readonly && props.externallyScrolled && 'overflow-visible',
 					)}
 					onScroll={handleHighlightScroll}
 					aria-hidden="true"
@@ -225,7 +201,9 @@ export function ColorEditor(props: ColorEditorProps) {
 				</div>
 				<Show when={!props.readonly}>
 					<textarea
-						ref={textareaRef}
+						ref={(el) => {
+							textareaRef = el;
+						}}
 						class={cn(
 							'absolute inset-0 h-full w-full resize-none border border-transparent bg-transparent p-0 outline-none',
 							'caret-primary placeholder:text-transparent text-transparent',
