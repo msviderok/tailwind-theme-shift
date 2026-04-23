@@ -5,8 +5,8 @@ export type TokenType =
 	| 'selector'
 	| 'punct'
 	| 'prop'
-	| 'val-hsl'
-	| 'val-oklch'
+	| 'val-color-input'
+	| 'val-color-output'
 	| 'val-other'
 	| 'comment'
 	| 'val-color-badge';
@@ -19,9 +19,6 @@ export interface DisplayToken {
 }
 
 const SELECTOR_LINE = /^[.:@]?[\w-]+\s*\{?\s*$/;
-const HSL_VALUE =
-	/^(?:hsla?\(\s*[^)]*\)|[+-]?\d*\.?\d+(?:deg|rad|turn|grad)?\s+\d*\.?\d+%\s+\d*\.?\d+%(?:\s*\/\s*[\d.]+%?)?)$/i;
-const OKLCH_VALUE = /^oklch\(\s*[^)]*\)$/i;
 const CUSTOM_PROPERTY_LINE = /^(\s*)(--[\w-]+)(\s*:\s*)([^;]*?)(\s*;)(\s*\/\*.*\*\/\s*)?$/;
 
 export function contrastColor(oklchL: number): '#111' | '#fff' {
@@ -59,17 +56,13 @@ function getValueToken(
 		return {
 			type: 'val-color-badge',
 			text: value,
-			css: side === 'input' ? colorToken.inputCss : colorToken.outputCss,
+			css: side === 'input' ? colorToken.previewCss : colorToken.outputCss,
 			fg: contrastColor(colorToken.oklchL),
 		};
 	}
 
-	if (side === 'input' && HSL_VALUE.test(value.trim())) {
-		return { type: 'val-hsl', text: value };
-	}
-
-	if (side === 'output' && OKLCH_VALUE.test(value.trim())) {
-		return { type: 'val-oklch', text: value };
+	if (colorToken) {
+		return { type: side === 'input' ? 'val-color-input' : 'val-color-output', text: value };
 	}
 
 	return { type: 'val-other', text: value };
@@ -112,11 +105,13 @@ export function tokenizeLine(
 		side,
 		showChips,
 	);
-	if (
-		(side === 'input' && HSL_VALUE.test(trimmed)) ||
-		(side === 'output' && OKLCH_VALUE.test(trimmed))
-	) {
-		return [rawLineToken];
+	const fullLineToken = findMatchingColorToken(lineOffset, lineOffset + line.length, colorTokens, side);
+	if (fullLineToken) {
+		const start = side === 'input' ? fullLineToken.inputStart : fullLineToken.outputStart;
+		const end = side === 'input' ? fullLineToken.inputEnd : fullLineToken.outputEnd;
+		if (start === lineOffset && end === lineOffset + line.length) {
+			return [rawLineToken];
+		}
 	}
 
 	const propertyMatch = CUSTOM_PROPERTY_LINE.exec(line);

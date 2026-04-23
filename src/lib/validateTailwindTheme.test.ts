@@ -13,6 +13,9 @@ describe('validateTailwindTheme – valid CSS inputs', () => {
 		'hsla(220,10%,50%,0.5)',
 		'220 10% 50%',
 		'1turn 50% 50%',
+		'#ff00aa',
+		'red',
+		'color(display-p3 1 0 0)',
 	];
 
 	for (const css of validCases) {
@@ -23,18 +26,21 @@ describe('validateTailwindTheme – valid CSS inputs', () => {
 	}
 });
 
-describe('validateTailwindTheme – raw-hsl classification', () => {
-	const rawHslCases = [
+describe('validateTailwindTheme – raw-color classification', () => {
+	const rawColorCases = [
 		'hsl(220 10% 50%)',
 		'hsla(220,10%,50%,0.5)',
 		'220 10% 50%',
 		'1turn 50% 50%',
 		'hsl(220 10% 50%);',
+		'#ff00aa',
+		'red',
+		'color(display-p3 1 0 0)',
 	];
 
-	for (const c of rawHslCases) {
-		it(`classifies as raw-hsl: ${c}`, () => {
-			expect(classify(c).kind).toBe('raw-hsl');
+	for (const c of rawColorCases) {
+		it(`classifies as raw-color: ${c}`, () => {
+			expect(classify(c).kind).toBe('raw-color');
 		});
 	}
 
@@ -62,7 +68,7 @@ describe('validateTailwindTheme – invalid inputs', () => {
 	it('rejects plain prose', () => {
 		const r = validate('hello world');
 		expect(r.ok).toBe(false);
-		if (!r.ok) expect(r.message).toMatch(/css|hsl/i);
+		if (!r.ok) expect(r.message).toMatch(/css|color/i);
 	});
 
 	it('rejects unbalanced braces', () => {

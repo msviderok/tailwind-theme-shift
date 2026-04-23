@@ -12,9 +12,12 @@ function createColorToken(inputLine: string, outputLine: string): ColorToken {
 		inputStart,
 		inputEnd: inputStart + inputValue.length,
 		inputCss: `hsl(${inputValue})`,
+		inputFormat: 'hsl-triplet',
 		outputStart,
 		outputEnd: outputStart + outputValue.length,
 		outputCss: outputValue,
+		outputFormat: 'oklch',
+		previewCss: `hsl(${inputValue})`,
 		oklchL: 0.72,
 	};
 }
@@ -95,14 +98,14 @@ describe('syntaxTokenizer', () => {
 		expect(
 			tokenizeLine(inputLine, 0, [createColorToken(inputLine, outputLine)], 'input', false)[3],
 		).toEqual({
-			type: 'val-hsl',
+			type: 'val-color-input',
 			text: '220 10% 50%',
 		});
 
 		expect(
 			tokenizeLine(outputLine, 0, [createColorToken(inputLine, outputLine)], 'output', false)[3],
 		).toEqual({
-			type: 'val-oklch',
+			type: 'val-color-output',
 			text: 'oklch(0.583 0.028 264.00)',
 		});
 	});
@@ -114,7 +117,7 @@ describe('syntaxTokenizer', () => {
 			{ type: 'plain', text: '  ' },
 			{ type: 'prop', text: '--primary' },
 			{ type: 'punct', text: ': ' },
-			{ type: 'val-hsl', text: '220 10% 50%' },
+			{ type: 'val-other', text: '220 10% 50%' },
 			{ type: 'punct', text: ';' },
 			{ type: 'comment', text: ' /* accent */' },
 		]);

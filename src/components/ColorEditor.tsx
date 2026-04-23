@@ -67,14 +67,14 @@ function TokenSpan(props: { token: DisplayToken }): JSX.Element {
 				props.token.type === 'selector' && 'text-(--syntax-selector)',
 				props.token.type === 'punct' && 'text-foreground/60',
 				props.token.type === 'prop' && 'text-(--syntax-prop)',
-				props.token.type === 'val-hsl' && 'text-(--syntax-value-input)',
-				props.token.type === 'val-oklch' && 'text-(--syntax-value-output)',
+				props.token.type === 'val-color-input' && 'text-(--syntax-value-input)',
+				props.token.type === 'val-color-output' && 'text-(--syntax-value-output)',
 				props.token.type === 'val-other' && 'text-foreground/70',
 				props.token.type === 'comment' && 'text-(--syntax-comment) italic',
 				props.token.type === 'plain' && 'text-foreground/85',
 			)}
 			style={{
-				color: isBadge() ? `contrast-color(${props.token.css})` : undefined,
+				color: isBadge() ? (props.token.fg ?? `contrast-color(${props.token.css})`) : undefined,
 				'--bg': isBadge() ? (props.token.css ?? 'transparent') : undefined,
 				'--b': isBadge() ? `contrast-color(${props.token.css})` : undefined,
 			}}

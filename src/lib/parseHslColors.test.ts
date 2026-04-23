@@ -34,7 +34,7 @@ describe('parseHslColors – functional hsl()', () => {
 
 	it('modern alpha with /: hsl(220 10% 50% / 50%)', () => {
 		const { output } = convertHslToOklchCss('hsl(220 10% 50% / 50%)');
-		expect(output).toMatch(/oklch\(.*\/\s*50%/);
+		expect(output).toMatch(/oklch\(.*\/\s*0\.5/);
 	});
 
 	it('hue in turns: hsl(1turn 50% 50%)', () => {

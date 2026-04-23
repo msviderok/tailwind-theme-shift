@@ -20,12 +20,15 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      culori:
+        specifier: ^4.0.2
+        version: 4.0.2
       lucide-solid:
         specifier: ^1.8.0
         version: 1.8.0(solid-js@1.9.7)
       shadcn:
         specifier: ^4.4.0
-        version: 4.4.0(@types/node@25.6.0)(typescript@pnpm+@typescript+typescript6@^6.0.0)
+        version: 4.4.0(@types/node@25.6.0)
       solid-js:
         specifier: 1.9.7
         version: 1.9.7
@@ -37,10 +40,10 @@ importers:
         version: 1.4.0
       valibot:
         specifier: ^1.3.1
-        version: 1.3.1(typescript@pnpm+@typescript+typescript6@^6.0.0)
+        version: 1.3.1
       vite-plus:
         specifier: ^0.1.19
-        version: 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)
+        version: 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.2.4
@@ -1517,6 +1520,10 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  culori@4.0.2:
+    resolution: {integrity: sha512-1+BhOB8ahCn4O0cep0Sh2l9KCOfOdY+BXJnKMHFFzDEouSr/el18QwXEMRlOj9UY5nCeA8UN3a/82rUWRBeyBw==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   data-uri-to-buffer@4.0.1:
     resolution: {integrity: sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==}
@@ -3671,7 +3678,7 @@ snapshots:
       '@typescript/native-preview-win32-arm64': 7.0.0-dev.20260421.2
       '@typescript/native-preview-win32-x64': 7.0.0-dev.20260421.2
 
-  '@voidzero-dev/vite-plus-core@0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(yaml@2.8.3)':
+  '@voidzero-dev/vite-plus-core@0.1.19(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3)':
     dependencies:
       '@oxc-project/runtime': 0.126.0
       '@oxc-project/types': 0.126.0
@@ -3681,7 +3688,6 @@ snapshots:
       '@types/node': 25.6.0
       fsevents: 2.3.3
       jiti: 2.6.1
-      typescript: link:pnpm:@typescript/typescript6@^6.0.0
       yaml: 2.8.3
 
   '@voidzero-dev/vite-plus-darwin-arm64@0.1.19':
@@ -3702,11 +3708,11 @@ snapshots:
   '@voidzero-dev/vite-plus-linux-x64-musl@0.1.19':
     optional: true
 
-  '@voidzero-dev/vite-plus-test@0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)':
+  '@voidzero-dev/vite-plus-test@0.1.19(@types/node@25.6.0)(jiti@2.6.1)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@types/chai': 5.2.3
-      '@voidzero-dev/vite-plus-core': 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(yaml@2.8.3)
+      '@voidzero-dev/vite-plus-core': 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3)
       es-module-lexer: 1.7.0
       obug: 2.1.1
       pixelmatch: 7.1.0
@@ -3917,14 +3923,12 @@ snapshots:
       object-assign: 4.1.1
       vary: 1.1.2
 
-  cosmiconfig@9.0.1(typescript@pnpm+@typescript+typescript6@^6.0.0):
+  cosmiconfig@9.0.1:
     dependencies:
       env-paths: 2.2.1
       import-fresh: 3.3.1
       js-yaml: 4.1.1
       parse-json: 5.2.0
-    optionalDependencies:
-      typescript: link:pnpm:@typescript/typescript6@^6.0.0
 
   cross-spawn@7.0.6:
     dependencies:
@@ -3935,6 +3939,8 @@ snapshots:
   cssesc@3.0.0: {}
 
   csstype@3.2.3: {}
+
+  culori@4.0.2: {}
 
   data-uri-to-buffer@4.0.1: {}
 
@@ -4476,7 +4482,7 @@ snapshots:
 
   ms@2.1.3: {}
 
-  msw@2.13.4(@types/node@25.6.0)(typescript@pnpm+@typescript+typescript6@^6.0.0):
+  msw@2.13.4(@types/node@25.6.0):
     dependencies:
       '@inquirer/confirm': 6.0.12(@types/node@25.6.0)
       '@mswjs/interceptors': 0.41.4
@@ -4496,8 +4502,6 @@ snapshots:
       type-fest: 5.6.0
       until-async: 3.0.2
       yargs: 17.7.2
-    optionalDependencies:
-      typescript: link:pnpm:@typescript/typescript6@^6.0.0
     transitivePeerDependencies:
       - '@types/node'
 
@@ -4866,7 +4870,7 @@ snapshots:
 
   setprototypeof@1.2.0: {}
 
-  shadcn@4.4.0(@types/node@25.6.0)(typescript@pnpm+@typescript+typescript6@^6.0.0):
+  shadcn@4.4.0(@types/node@25.6.0):
     dependencies:
       '@babel/core': 7.29.0
       '@babel/parser': 7.29.2
@@ -4877,7 +4881,7 @@ snapshots:
       '@types/validate-npm-package-name': 4.0.2
       browserslist: 4.28.2
       commander: 14.0.3
-      cosmiconfig: 9.0.1(typescript@pnpm+@typescript+typescript6@^6.0.0)
+      cosmiconfig: 9.0.1
       dedent: 1.7.2
       deepmerge: 4.3.1
       diff: 8.0.4
@@ -4887,7 +4891,7 @@ snapshots:
       fuzzysort: 3.1.0
       https-proxy-agent: 7.0.6
       kleur: 4.1.5
-      msw: 2.13.4(@types/node@25.6.0)(typescript@pnpm+@typescript+typescript6@^6.0.0)
+      msw: 2.13.4(@types/node@25.6.0)
       node-fetch: 3.3.2
       open: 11.0.0
       ora: 8.2.0
@@ -5104,9 +5108,7 @@ snapshots:
 
   util-deprecate@1.0.2: {}
 
-  valibot@1.3.1(typescript@pnpm+@typescript+typescript6@^6.0.0):
-    optionalDependencies:
-      typescript: link:pnpm:@typescript/typescript6@^6.0.0
+  valibot@1.3.1: {}
 
   validate-html-nesting@1.2.4: {}
 
@@ -5127,11 +5129,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  vite-plus@0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3):
+  vite-plus@0.1.19(@types/node@25.6.0)(jiti@2.6.1)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3):
     dependencies:
       '@oxc-project/types': 0.126.0
-      '@voidzero-dev/vite-plus-core': 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(yaml@2.8.3)
-      '@voidzero-dev/vite-plus-test': 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(typescript@pnpm+@typescript+typescript6@^6.0.0)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)
+      '@voidzero-dev/vite-plus-core': 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3)
+      '@voidzero-dev/vite-plus-test': 0.1.19(@types/node@25.6.0)(jiti@2.6.1)(vite@8.0.9(@types/node@25.6.0)(jiti@2.6.1)(yaml@2.8.3))(yaml@2.8.3)
       oxfmt: 0.45.0
       oxlint: 1.60.0(oxlint-tsgolint@0.21.1)
       oxlint-tsgolint: 0.21.1

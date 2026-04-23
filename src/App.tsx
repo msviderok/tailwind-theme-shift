@@ -1,9 +1,8 @@
 import { Code, Moon, Siren, Sun } from 'lucide-solid';
 import type { JSX } from 'solid-js';
-import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
+import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
 import HighlightIcon from './components/HighlightIcon';
-import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import {
 	Select,
@@ -15,8 +14,13 @@ import {
 import { Separator } from './components/ui/separator';
 import { Switch } from './components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/ui/tooltip';
-import type { ColorToken } from './lib/parseHslColors';
-import { convertHslToOklchCss, convertRawHsl } from './lib/parseHslColors';
+import { convertCssColors } from './lib/colors/convert';
+import {
+	DEFAULT_OUTPUT_FORMAT,
+	isOutputFormatId,
+	outputFormatOptions,
+} from './lib/colors/registry';
+import type { ConversionToken, OutputFormatId } from './lib/colors/types';
 import { cn } from './lib/utils';
 import { validate } from './lib/validateTailwindTheme';
 import { PLACEHOLDER } from './placeholder';
@@ -25,6 +29,7 @@ const STORAGE_KEYS = {
 	theme: 'hsl-to-oklch.theme',
 	highlight: 'hsl-to-oklch.highlight',
 	input: 'hsl-to-oklch.input',
+	outputFormat: 'hsl-to-oklch.outputFormat',
 } as const;
 
 type DerivedState =
@@ -33,9 +38,9 @@ type DerivedState =
 	| {
 			status: 'valid';
 			output: string;
-			tokens: ColorToken[];
+			tokens: ConversionToken[];
 			error: null;
-			kind: 'raw-hsl' | 'css';
+			kind: 'raw-color' | 'css';
 	  };
 
 function EmptyOutputState(props: { message: string; detail?: string; invalid?: boolean }) {
@@ -65,6 +70,13 @@ function EmptyOutputState(props: { message: string; detail?: string; invalid?: b
 export default function App() {
 	const [input, setInput] = createSignal(
 		typeof window === 'undefined' ? '' : (window.localStorage.getItem(STORAGE_KEYS.input) ?? ''),
+	);
+	const [outputFormat, setOutputFormat] = createSignal<OutputFormatId>(
+		typeof window === 'undefined'
+			? DEFAULT_OUTPUT_FORMAT
+			: isOutputFormatId(window.localStorage.getItem(STORAGE_KEYS.outputFormat) ?? '')
+				? (window.localStorage.getItem(STORAGE_KEYS.outputFormat) as OutputFormatId)
+				: DEFAULT_OUTPUT_FORMAT,
 	);
 	const [showChips, setShowChips] = createSignal(true);
 	const [isDark, setIsDark] = createSignal(true);
@@ -135,6 +147,11 @@ export default function App() {
 
 	createEffect(() => {
 		if (typeof window === 'undefined') return;
+		window.localStorage.setItem(STORAGE_KEYS.outputFormat, outputFormat());
+	});
+
+	createEffect(() => {
+		if (typeof window === 'undefined') return;
 
 		const nextInput = input();
 		if (nextInput) {
@@ -156,13 +173,8 @@ export default function App() {
 			return { status: 'invalid', output: '', tokens: [], error: validation.message, kind: null };
 		}
 
-		if (validation.kind === 'raw-hsl') {
-			const { output, tokens } = convertRawHsl(source);
-			return { status: 'valid', output, tokens, error: null, kind: 'raw-hsl' };
-		}
-
-		const { output, tokens } = convertHslToOklchCss(source);
-		return { status: 'valid', output, tokens, error: null, kind: 'css' };
+		const { output, tokens } = convertCssColors(source, outputFormat());
+		return { status: 'valid', output, tokens, error: null, kind: validation.kind };
 	});
 
 	const outputValue = createMemo(() => (state().status === 'valid' ? state().output : ''));
@@ -234,6 +246,9 @@ export default function App() {
 
 	const isInputMobileActive = createMemo(() => activeMobilePane() === 'input');
 	const isOutputMobileActive = createMemo(() => activeMobilePane() === 'output');
+	const outputSelectItems = createMemo(() =>
+		outputFormatOptions.map((option) => ({ value: option.id, label: option.label })),
+	);
 
 	return (
 		<div class="flex h-screen min-h-screen flex-col overflow-hidden bg-background text-foreground">
@@ -364,17 +379,6 @@ export default function App() {
 							scrollTop={inputScrollTop()}
 							onScrollPositionChange={handleInputScroll}
 						/>
-
-						<div class="absolute top-1 right-3">
-							<Select value="HSL" items={[{ value: 'HSL', label: 'HSL' }]}>
-								<SelectTrigger class="select-none">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="HSL">HSL</SelectItem>
-								</SelectContent>
-							</Select>
-						</div>
 					</div>
 				</div>
 
@@ -388,9 +392,29 @@ export default function App() {
 				>
 					<div
 						ref={outputScrollContainerRef}
-						class="flex flex-1 overflow-auto"
+						class="relative flex flex-1 overflow-auto"
 						onScroll={handleOutputContainerScroll}
 					>
+						<div class="absolute top-1 right-3 z-10">
+							<Select
+								value={outputFormat()}
+								items={outputSelectItems()}
+								onValueChange={(value) => {
+									if (typeof value === 'string' && isOutputFormatId(value)) {
+										setOutputFormat(value);
+									}
+								}}
+							>
+								<SelectTrigger class="select-none">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<For each={outputFormatOptions}>
+										{(option) => <SelectItem value={option.id}>{option.label}</SelectItem>}
+									</For>
+								</SelectContent>
+							</Select>
+						</div>
 						<Show
 							when={state().status === 'valid' && outputValue()}
 							fallback={
@@ -399,7 +423,7 @@ export default function App() {
 									fallback={
 										<EmptyOutputState
 											message="Output will appear here"
-											detail="as you type or paste HSL values"
+											detail="as you type or paste CSS variables"
 										/>
 									}
 								>
