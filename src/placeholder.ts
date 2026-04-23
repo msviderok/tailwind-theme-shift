@@ -1,3 +1,22 @@
+export const INPUT_PLACEHOLDER = `Paste your CSS theme here.
+
+Only --custom-properties are converted; other
+declarations pass through unchanged.
+
+Supported input formats:
+  hex            #fff · #ffffff · #ffffffff
+  rgb / rgba     rgb(0 0 0) · rgba(0, 0, 0, .5)
+  hsl / hsla     hsl(200 50% 40%)
+  hwb            hwb(30 10% 20%)
+  lab / lch      lab(50% 40 -20) · lch(50% 40 30)
+  oklab / oklch  oklab(.5 .1 -.1) · oklch(.7 .12 160)
+  color()        srgb · srgb-linear · display-p3
+                 a98-rgb · prophoto-rgb · rec2020
+                 xyz · xyz-d50 · xyz-d65
+  named          red, cornflowerblue, transparent, …
+
+Pick an output format in the top-left selector.`;
+
 export const PLACEHOLDER = `
 /* BoldKit Theme - Light & Dark Mode */
 :root {

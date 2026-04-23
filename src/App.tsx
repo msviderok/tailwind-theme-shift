@@ -1,4 +1,4 @@
-import { Code, Copy, FileText, Moon, Siren, Sun, X } from 'lucide-solid';
+import { Check, Code, Copy, FileText, Moon, Siren, Sun, X } from 'lucide-solid';
 import type { JSX } from 'solid-js';
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
@@ -13,7 +13,7 @@ import {
 } from './components/ui/select';
 import { Separator } from './components/ui/separator';
 import { Switch } from './components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from './components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/ui/tooltip';
 import { convertCssColors } from './lib/colors/convert';
 import {
 	DEFAULT_OUTPUT_FORMAT,
@@ -23,7 +23,7 @@ import {
 import type { ConversionToken, OutputFormatId } from './lib/colors/types';
 import { cn } from './lib/utils';
 import { validate } from './lib/validateTailwindTheme';
-import { PLACEHOLDER } from './placeholder';
+import { INPUT_PLACEHOLDER, PLACEHOLDER } from './placeholder';
 
 const STORAGE_KEYS = {
 	theme: 'hsl-to-oklch.theme',
@@ -251,195 +251,234 @@ export default function App() {
 	);
 
 	return (
-		<div class="flex h-screen min-h-screen flex-col overflow-hidden bg-background text-foreground">
-			<header class="flex h-10 shrink-0 items-center gap-2 border-b border-border bg-primary px-3 md:px-4">
-				{/* Output format select */}
-				<Select
-					value={outputFormat()}
-					items={outputSelectItems()}
-					onValueChange={(value) => {
-						if (typeof value === 'string' && isOutputFormatId(value)) {
-							setOutputFormat(value);
-						}
-					}}
-				>
-					<SelectTrigger class="select-none">
-						<SelectValue />
-					</SelectTrigger>
-					<SelectContent>
-						<For each={outputFormatOptions}>
-							{(option) => <SelectItem value={option.id}>{option.label}</SelectItem>}
-						</For>
-					</SelectContent>
-				</Select>
-
-				{/* Load sample */}
-				<Button variant="secondary" onClick={handleSample}>
-					<FileText size={12} />
-					sample
-				</Button>
-
-				{/* Clear input */}
-				<Button variant="tertiary" onClick={handleInputClear} disabled={!input()}>
-					<X size={12} />
-				</Button>
-
-				{/* Copy output */}
-				<Button
-					variant="primary"
-					class={cn(copied() && 'text-accent hover:text-accent')}
-					onClick={handleCopy}
-					disabled={!outputValue()}
-				>
-					<Copy size={12} />
-					{copied() ? 'Copied!' : 'copy'}
-				</Button>
-
-				{/* Right side */}
-				<div class="ml-auto flex items-center gap-2">
-					{/* Highlight colors toggle */}
-					<Tooltip>
-						<TooltipTrigger
-							render={(p) => (
-								<Switch
-									{...p}
-									checked={showChips()}
-									onCheckedChange={setShowChips}
-									aria-label={showChips() ? 'Do not highlight colors' : 'Highlight colors'}
-									class={cn(p.class, 'data-unchecked:bg-slate-700')}
-									icons={{
-										on: <HighlightIcon state="on" width={12} height={12} />,
-										off: <HighlightIcon state="off" width={12} height={12} />,
-									}}
-								/>
-							)}
-						/>
-						<TooltipContent>
-							{showChips() ? 'Do not highlight colors' : 'Highlight colors'}
-						</TooltipContent>
-					</Tooltip>
-
-					{/* Dark / light mode toggle */}
-					<Tooltip>
-						<TooltipTrigger
-							render={(p) => (
-								<Switch
-									{...p}
-									checked={isDark()}
-									onCheckedChange={setIsDark}
-									aria-label={`Switch to ${isDark() ? 'light' : 'dark'} theme`}
-									class={cn(
-										p.class,
-										'data-unchecked:text-secondary data-unchecked:bg-secondary',
-										'data-checked:text-darkblue data-checked:border-darkblue/20 data-checked:bg-darkblue',
-									)}
-									icons={{
-										on: <Moon size={12} />,
-										off: <Sun size={12} class="stroke-3" />,
-									}}
-								/>
-							)}
-						/>
-						<TooltipContent>Switch to {isDark() ? 'light' : 'dark'} theme</TooltipContent>
-					</Tooltip>
-				</div>
-			</header>
-
-			<div class="flex shrink-0 gap-2 px-4 pt-3 md:hidden">
-				<Button
-					variant="secondary"
-					class={cn(
-						'flex-1 rounded-full px-3 py-2 text-[11px] tracking-[0.08em] uppercase',
-						isInputMobileActive()
-							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
-							: 'bg-primary text-muted-foreground',
-					)}
-					onClick={() => setActiveMobilePane('input')}
-				>
-					Input
-				</Button>
-				<Button
-					variant="secondary"
-					class={cn(
-						'flex-1 rounded-full px-3 py-2 text-[11px] tracking-[0.08em] uppercase',
-						isOutputMobileActive()
-							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
-							: 'bg-primary text-muted-foreground',
-					)}
-					onClick={() => setActiveMobilePane('output')}
-				>
-					Output
-				</Button>
-			</div>
-
-			<div class="flex flex-1 overflow-hidden md:px-0">
-				<div
-					class={cn(
-						isInputMobileActive() ? 'flex' : 'hidden',
-						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex min-w-0 flex-1 flex-col overflow-hidden bg-card',
-					)}
-				>
-					<div class="flex flex-1 overflow-auto relative">
-						<ColorEditor
-							value={input()}
-							onInput={setInput}
-							readonly={false}
-							showChips={showChips()}
-							colorTokens={colorTokens()}
-							side="input"
-							placeholder="Paste your Tailwind CSS variables here…"
-							scrollTop={inputScrollTop()}
-							onScrollPositionChange={handleInputScroll}
-						/>
-					</div>
-				</div>
-
-				<Separator orientation="vertical" />
-
-				<div
-					class={cn(
-						isOutputMobileActive() ? 'flex' : 'hidden',
-						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex min-w-0 flex-1 flex-col overflow-hidden bg-card',
-					)}
-				>
-					<div
-						ref={outputScrollContainerRef}
-						class="relative flex flex-1 overflow-auto"
-						onScroll={handleOutputContainerScroll}
-					>
-						<Show
-							when={state().status === 'valid' && outputValue()}
-							fallback={
-								<Show
-									when={state().status === 'invalid'}
-									fallback={
-										<EmptyOutputState
-											message="Output will appear here"
-											detail="as you type or paste CSS variables"
-										/>
-									}
-								>
-									<EmptyOutputState
-										message="Invalid syntax"
-										detail={state().status === 'invalid' ? (state().error ?? undefined) : undefined}
-										invalid={state().status === 'invalid'}
-									/>
-								</Show>
+		<TooltipProvider delay={0}>
+			<div class="flex h-screen min-h-screen flex-col overflow-hidden bg-background text-foreground">
+				<header class="flex h-10 shrink-0 items-center gap-2 border-b border-border bg-primary px-3 md:px-4">
+					{/* Output format select */}
+					<Select
+						value={outputFormat()}
+						items={outputSelectItems()}
+						onValueChange={(value) => {
+							if (typeof value === 'string' && isOutputFormatId(value)) {
+								setOutputFormat(value);
 							}
-						>
+						}}
+					>
+						<SelectTrigger class="select-none">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent>
+							<For each={outputFormatOptions}>
+								{(option) => <SelectItem value={option.id}>{option.label}</SelectItem>}
+							</For>
+						</SelectContent>
+					</Select>
+
+					{/* Load sample */}
+					<Tooltip>
+						<TooltipTrigger
+							render={(p) => (
+								<Button
+									{...p}
+									variant="secondary"
+									onClick={handleSample}
+									aria-label="Insert sample theme"
+								>
+									<FileText size={12} />
+								</Button>
+							)}
+						/>
+						<TooltipContent>Insert a sample Tailwind theme</TooltipContent>
+					</Tooltip>
+
+					{/* Clear input */}
+					<Tooltip>
+						<TooltipTrigger
+							render={(p) => (
+								<Button
+									{...p}
+									variant="tertiary"
+									onClick={handleInputClear}
+									disabled={!input()}
+									aria-label="Clear input"
+								>
+									<X size={12} />
+								</Button>
+							)}
+						/>
+						<TooltipContent>Clear input</TooltipContent>
+					</Tooltip>
+
+					{/* Copy output */}
+					<Tooltip open={copied() || undefined}>
+						<TooltipTrigger
+							render={(p) => (
+								<Button
+									{...p}
+									variant="primary"
+									onClick={handleCopy}
+									disabled={!outputValue()}
+									aria-label={copied() ? 'Copied' : 'Copy output to clipboard'}
+								>
+									<Show when={copied()} fallback={<Copy size={12} />}>
+										<Check size={14} />
+									</Show>
+								</Button>
+							)}
+						/>
+						<TooltipContent>{copied() ? 'Copied!' : 'Copy output to clipboard'}</TooltipContent>
+					</Tooltip>
+
+					{/* Right side */}
+					<div class="ml-auto flex items-center gap-2">
+						{/* Highlight colors toggle */}
+						<Tooltip>
+							<TooltipTrigger
+								render={(p) => (
+									<Switch
+										{...p}
+										checked={showChips()}
+										onCheckedChange={setShowChips}
+										aria-label={showChips() ? 'Do not highlight colors' : 'Highlight colors'}
+										class={cn(
+											p.class,
+											'data-checked:text-primary-strong data-unchecked:text-secondary-strong',
+											'dark:data-checked:text-primary-soft dark:data-unchecked:text-secondary-soft',
+										)}
+										icons={{
+											on: <HighlightIcon state="on" width={12} height={12} />,
+											off: <HighlightIcon state="off" width={12} height={12} />,
+										}}
+									/>
+								)}
+							/>
+							<TooltipContent>
+								{showChips() ? 'Do not highlight colors' : 'Highlight colors'}
+							</TooltipContent>
+						</Tooltip>
+
+						{/* Dark / light mode toggle */}
+						<Tooltip>
+							<TooltipTrigger
+								render={(p) => (
+									<Switch
+										{...p}
+										checked={isDark()}
+										onCheckedChange={setIsDark}
+										aria-label={`Switch to ${isDark() ? 'light' : 'dark'} theme`}
+										class={cn(
+											p.class,
+											'data-checked:text-primary-strong data-unchecked:text-secondary-strong',
+											'dark:data-checked:text-primary-soft dark:data-unchecked:text-secondary-soft',
+										)}
+										icons={{
+											on: <Moon size={12} />,
+											off: <Sun size={12} class="stroke-3" />,
+										}}
+									/>
+								)}
+							/>
+							<TooltipContent>Switch to {isDark() ? 'light' : 'dark'} theme</TooltipContent>
+						</Tooltip>
+					</div>
+				</header>
+
+				<div class="flex shrink-0 gap-2 px-4 pt-3 md:hidden">
+					<Button
+						variant={isInputMobileActive() ? 'primary' : 'secondary'}
+						class={cn(
+							'flex-1 rounded-base px-3 py-2 text-[11px] tracking-[0.08em] uppercase',
+							!isInputMobileActive() &&
+								'bg-muted border-border text-muted-foreground shadow-none hover:translate-x-0 hover:translate-y-0',
+						)}
+						onClick={() => setActiveMobilePane('input')}
+					>
+						Input
+					</Button>
+					<Button
+						variant={isOutputMobileActive() ? 'primary' : 'secondary'}
+						class={cn(
+							'flex-1 rounded-base px-3 py-2 text-[11px] tracking-[0.08em] uppercase',
+							!isOutputMobileActive() &&
+								'bg-muted border-border text-muted-foreground shadow-none hover:translate-x-0 hover:translate-y-0',
+						)}
+						onClick={() => setActiveMobilePane('output')}
+					>
+						Output
+					</Button>
+				</div>
+
+				<div class="flex flex-1 overflow-hidden md:px-0">
+					<div
+						class={cn(
+							isInputMobileActive() ? 'flex' : 'hidden',
+							'mx-4 my-3 rounded-base border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex min-w-0 flex-1 flex-col overflow-hidden bg-card',
+						)}
+					>
+						<div class="flex flex-1 overflow-auto relative">
 							<ColorEditor
-								value={outputValue()}
-								readonly={true}
+								value={input()}
+								onInput={setInput}
+								readonly={false}
 								showChips={showChips()}
 								colorTokens={colorTokens()}
-								side="output"
-								scrollTop={outputScrollTop()}
-								onScrollPositionChange={handleOutputScroll}
+								side="input"
+								placeholder={INPUT_PLACEHOLDER}
+								scrollTop={inputScrollTop()}
+								onScrollPositionChange={handleInputScroll}
 							/>
-						</Show>
+						</div>
+					</div>
+
+					<Separator orientation="vertical" />
+
+					<div
+						class={cn(
+							isOutputMobileActive() ? 'flex' : 'hidden',
+							'mx-4 my-3 rounded-base border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex min-w-0 flex-1 flex-col overflow-hidden bg-card',
+						)}
+					>
+						<div
+							ref={outputScrollContainerRef}
+							class="relative flex flex-1 overflow-auto"
+							onScroll={handleOutputContainerScroll}
+						>
+							<Show
+								when={state().status === 'valid' && outputValue()}
+								fallback={
+									<Show
+										when={state().status === 'invalid'}
+										fallback={
+											<EmptyOutputState
+												message="Output will appear here"
+												detail="as you type or paste CSS variables"
+											/>
+										}
+									>
+										<EmptyOutputState
+											message="Invalid syntax"
+											detail={
+												state().status === 'invalid' ? (state().error ?? undefined) : undefined
+											}
+											invalid={state().status === 'invalid'}
+										/>
+									</Show>
+								}
+							>
+								<ColorEditor
+									value={outputValue()}
+									readonly={true}
+									showChips={showChips()}
+									colorTokens={colorTokens()}
+									side="output"
+									scrollTop={outputScrollTop()}
+									onScrollPositionChange={handleOutputScroll}
+								/>
+							</Show>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
+		</TooltipProvider>
 	);
 }
