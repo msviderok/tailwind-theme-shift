@@ -1,7 +1,17 @@
 import { Code, Moon, Siren, Sun } from 'lucide-solid';
+import type { JSX } from 'solid-js';
 import { Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
 import HighlightIcon from './components/HighlightIcon';
+import { Badge } from './components/ui/badge';
+import { Button } from './components/ui/button';
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from './components/ui/select';
 import { Separator } from './components/ui/separator';
 import { Switch } from './components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from './components/ui/tooltip';
@@ -202,7 +212,6 @@ export default function App() {
 	};
 
 	const handleInputScroll = (e: { top: number; left: number }) => {
-		console.log('input', e.top);
 		setInputScrollTop(e.top);
 		if (isShiftPressed()) {
 			syncPaneScroll(e.top);
@@ -210,154 +219,52 @@ export default function App() {
 	};
 
 	const handleOutputScroll = (e: { top: number; left: number }) => {
-		console.log('output', e.top);
 		setOutputScrollTop(e.top);
 		if (isShiftPressed()) {
 			syncPaneScroll(e.top);
 		}
 	};
 
+	const handleOutputContainerScroll: JSX.EventHandler<HTMLDivElement, Event> = (event) => {
+		handleOutputScroll({
+			top: event.currentTarget.scrollTop,
+			left: event.currentTarget.scrollLeft,
+		});
+	};
+
 	const isInputMobileActive = createMemo(() => activeMobilePane() === 'input');
 	const isOutputMobileActive = createMemo(() => activeMobilePane() === 'output');
-	const actionButtonClass =
-		'bg-transparent p-0 text-[11px] font-semibold tracking-[0.08em] uppercase text-muted-foreground transition-colors hover:text-foreground';
-	const paneClass = 'min-w-0 flex-1 flex-col overflow-hidden bg-card';
 
 	return (
 		<div class="flex h-screen min-h-screen flex-col overflow-hidden bg-background text-foreground">
-			<div class="flex shrink-0 gap-2 px-4 pt-3 md:hidden">
-				<button
-					type="button"
-					class={cn(
-						'flex-1 rounded-full border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors',
-						isInputMobileActive()
-							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
-							: 'border-border bg-primary text-muted-foreground',
-					)}
-					onClick={() => setActiveMobilePane('input')}
-				>
-					Input
-				</button>
-				<button
-					type="button"
-					class={cn(
-						'flex-1 rounded-full border px-3 py-2 text-[11px] tracking-[0.08em] uppercase transition-colors',
-						isOutputMobileActive()
-							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
-							: 'border-border bg-primary text-muted-foreground',
-					)}
-					onClick={() => setActiveMobilePane('output')}
-				>
-					Output
-				</button>
-			</div>
-
-			<div class="flex flex-1 overflow-hidden md:px-0">
-				<div
-					class={cn(
-						paneClass,
-						isInputMobileActive() ? 'flex' : 'hidden',
-						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex',
-					)}
-				>
-					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-primary text-primary-foreground px-5">
-						<span class="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">
-							Input
-						</span>
-						<span class="font-mono text-[10px] text-muted-foreground">HSL</span>
-						<div class="flex-1" />
-						<Show
-							when={input()}
-							fallback={
-								<button type="button" class={actionButtonClass} onClick={handleSample}>
-									Load sample
-								</button>
+			<header class="flex h-10 shrink-0 items-center justify-between border-b border-border bg-primary px-3 md:px-4">
+				<div class="flex items-center gap-3">
+					<Button
+						variant={input() ? 'primary' : 'tertiary'}
+						vibe="pushed-in"
+						onClick={() => {
+							if (input()) {
+								handleInputClear();
+							} else {
+								handleSample();
 							}
+						}}
+					>
+						{input() ? 'Clear' : 'Load sample'}
+					</Button>
+
+					<Show when={outputValue()}>
+						<Button
+							variant="primary"
+							vibe="pushed-in"
+							class={cn(copied() && 'text-accent hover:text-accent')}
+							onClick={handleCopy}
 						>
-							<button type="button" class={actionButtonClass} onClick={handleInputClear}>
-								Clear
-							</button>
-						</Show>
-					</div>
-
-					<div class="flex flex-1 overflow-auto">
-						<ColorEditor
-							value={input()}
-							onInput={setInput}
-							readonly={false}
-							showChips={showChips()}
-							colorTokens={colorTokens()}
-							side="input"
-							placeholder="Paste your Tailwind CSS variables here…"
-							scrollTop={inputScrollTop()}
-							onScrollPositionChange={handleInputScroll}
-						/>
-					</div>
+							{copied() ? 'Copied!' : 'Copy'}
+						</Button>
+					</Show>
 				</div>
-
-				<Separator orientation="vertical" />
-
-				<div
-					class={cn(
-						paneClass,
-						isOutputMobileActive() ? 'flex' : 'hidden',
-						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex',
-					)}
-				>
-					<div class="flex h-10 shrink-0 items-center gap-2.5 border-b border-border bg-primary px-5">
-						<span class="text-[10.5px] font-semibold tracking-[0.12em] uppercase text-muted-foreground">
-							Output
-						</span>
-						<span class="font-mono text-[10px] text-muted-foreground">OKLCH</span>
-						<div class="flex-1" />
-						<Show when={outputValue()}>
-							<button
-								type="button"
-								class={cn(actionButtonClass, copied() && 'text-accent hover:text-accent')}
-								onClick={handleCopy}
-							>
-								{copied() ? 'Copied!' : 'Copy'}
-							</button>
-						</Show>
-					</div>
-
-					<div ref={outputScrollContainerRef} class="flex flex-1 overflow-auto">
-						<Show
-							when={state().status === 'valid' && outputValue()}
-							fallback={
-								<Show
-									when={state().status === 'invalid'}
-									fallback={
-										<EmptyOutputState
-											message="Output will appear here"
-											detail="as you type or paste HSL values"
-										/>
-									}
-								>
-									<EmptyOutputState
-										message="Invalid syntax"
-										detail={state().status === 'invalid' ? (state().error ?? undefined) : undefined}
-										invalid={state().status === 'invalid'}
-									/>
-								</Show>
-							}
-						>
-							<ColorEditor
-								value={outputValue()}
-								readonly={true}
-								showChips={showChips()}
-								colorTokens={colorTokens()}
-								side="output"
-								scrollTop={outputScrollTop()}
-								onScrollPositionChange={handleOutputScroll}
-							/>
-						</Show>
-					</div>
-				</div>
-			</div>
-
-			<footer class="flex h-9 shrink-0 items-center border-t border-border bg-primary px-3 md:px-4">
-				<div class="ml-auto flex items-center gap-3">
+				<div class=" flex items-center gap-3">
 					<div class="flex items-center gap-2">
 						<Tooltip>
 							<TooltipTrigger
@@ -409,7 +316,114 @@ export default function App() {
 						</Tooltip>
 					</div>
 				</div>
-			</footer>
+			</header>
+
+			<div class="flex shrink-0 gap-2 px-4 pt-3 md:hidden">
+				<Button
+					variant="secondary"
+					class={cn(
+						'flex-1 rounded-full px-3 py-2 text-[11px] tracking-[0.08em] uppercase',
+						isInputMobileActive()
+							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
+							: 'bg-primary text-muted-foreground',
+					)}
+					onClick={() => setActiveMobilePane('input')}
+				>
+					Input
+				</Button>
+				<Button
+					variant="secondary"
+					class={cn(
+						'flex-1 rounded-full px-3 py-2 text-[11px] tracking-[0.08em] uppercase',
+						isOutputMobileActive()
+							? 'border-[color-mix(in_srgb,var(--accent)_45%,var(--border))] bg-[color-mix(in_srgb,var(--accent)_20%,var(--muted))] text-foreground'
+							: 'bg-primary text-muted-foreground',
+					)}
+					onClick={() => setActiveMobilePane('output')}
+				>
+					Output
+				</Button>
+			</div>
+
+			<div class="flex flex-1 overflow-hidden md:px-0">
+				<div
+					class={cn(
+						isInputMobileActive() ? 'flex' : 'hidden',
+						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex min-w-0 flex-1 flex-col overflow-hidden bg-card',
+					)}
+				>
+					<div class="flex flex-1 overflow-auto relative">
+						<ColorEditor
+							value={input()}
+							onInput={setInput}
+							readonly={false}
+							showChips={showChips()}
+							colorTokens={colorTokens()}
+							side="input"
+							placeholder="Paste your Tailwind CSS variables here…"
+							scrollTop={inputScrollTop()}
+							onScrollPositionChange={handleInputScroll}
+						/>
+
+						<div class="absolute top-1 right-3">
+							<Select value="HSL" items={[{ value: 'HSL', label: 'HSL' }]}>
+								<SelectTrigger class="select-none">
+									<SelectValue />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="HSL">HSL</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+					</div>
+				</div>
+
+				<Separator orientation="vertical" />
+
+				<div
+					class={cn(
+						isOutputMobileActive() ? 'flex' : 'hidden',
+						'mx-4 my-3 rounded-[18px] border border-border md:mx-0 md:my-0 md:rounded-none md:border-0 md:flex min-w-0 flex-1 flex-col overflow-hidden bg-card',
+					)}
+				>
+					<div
+						ref={outputScrollContainerRef}
+						class="flex flex-1 overflow-auto"
+						onScroll={handleOutputContainerScroll}
+					>
+						<Show
+							when={state().status === 'valid' && outputValue()}
+							fallback={
+								<Show
+									when={state().status === 'invalid'}
+									fallback={
+										<EmptyOutputState
+											message="Output will appear here"
+											detail="as you type or paste HSL values"
+										/>
+									}
+								>
+									<EmptyOutputState
+										message="Invalid syntax"
+										detail={state().status === 'invalid' ? (state().error ?? undefined) : undefined}
+										invalid={state().status === 'invalid'}
+									/>
+								</Show>
+							}
+						>
+							<ColorEditor
+								value={outputValue()}
+								readonly={true}
+								showChips={showChips()}
+								colorTokens={colorTokens()}
+								side="output"
+								scrollTop={outputScrollTop()}
+								onScrollPositionChange={handleOutputScroll}
+							/>
+						</Show>
+					</div>
+				</div>
+			</div>
 		</div>
 	);
 }

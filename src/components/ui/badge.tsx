@@ -5,16 +5,17 @@ import { mergeProps, splitProps } from 'solid-js';
 import { cn } from '@/lib/utils';
 
 const badgeVariants = cva(
-	'inline-flex items-center justify-center rounded-base border-2 border-border px-2.5 py-0.5 text-xs font-base w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] overflow-hidden',
+	'inline-flex items-center gap-1 w-fit whitespace-nowrap shrink-0 font-heading font-black uppercase tracking-[0.15em] text-[11px] leading-none px-2 py-1 -rotate-2 [&>svg]:size-3 [&>svg]:pointer-events-none',
 	{
 		variants: {
 			variant: {
-				default: 'bg-main text-main-foreground',
-				neutral: 'bg-secondary-background text-foreground',
+				primary: 'bg-primary-strong text-primary-soft',
+				secondary: 'bg-secondary-strong text-secondary-soft',
+				tertiary: 'bg-tertiary-strong text-tertiary-soft',
 			},
 		},
 		defaultVariants: {
-			variant: 'default',
+			variant: 'primary',
 		},
 	},
 );
