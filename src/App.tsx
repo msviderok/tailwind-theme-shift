@@ -256,7 +256,6 @@ export default function App() {
 				<div class="flex items-center gap-3">
 					<Button
 						variant={input() ? 'primary' : 'tertiary'}
-						vibe="pushed-in"
 						onClick={() => {
 							if (input()) {
 								handleInputClear();
@@ -271,7 +270,6 @@ export default function App() {
 					<Show when={outputValue()}>
 						<Button
 							variant="primary"
-							vibe="pushed-in"
 							class={cn(copied() && 'text-accent hover:text-accent')}
 							onClick={handleCopy}
 						>
@@ -395,7 +393,7 @@ export default function App() {
 						class="relative flex flex-1 overflow-auto"
 						onScroll={handleOutputContainerScroll}
 					>
-						<div class="absolute top-1 right-3 z-10">
+						<div class="absolute top-1 right-3 z-1">
 							<Select
 								value={outputFormat()}
 								items={outputSelectItems()}

@@ -46,7 +46,7 @@ function LineNumbers(props: { readonly: boolean; value: string; scrollTop?: numb
 				ref = el;
 			}}
 			class={cn(
-				'w-12 shrink-0 border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none bg-primary/25 h-full',
+				'w-12 sticky left-0 top-0 shrink-0 border-r border-border py-0 pr-3 text-right text-[13px] leading-[20px] text-muted-foreground select-none bg-primary h-full z-1',
 				!props.readonly && 'overflow-hidden',
 			)}
 		>
@@ -177,7 +177,7 @@ export function ColorEditor(props: ColorEditorProps) {
 						highlightRef = el;
 					}}
 					class={cn(
-						'relative',
+						'relative w-max',
 						!props.readonly && 'absolute inset-0 overflow-hidden pointer-events-none',
 					)}
 					aria-hidden="true"

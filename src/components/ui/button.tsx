@@ -28,13 +28,11 @@ const buttonVariants = cva(
 					'shadow-shadow hover:translate-x-boxShadowX hover:translate-y-boxShadowY hover:shadow-none',
 				'elevated-reverse':
 					'shadow-none hover:translate-x-reverseBoxShadowX hover:translate-y-reverseBoxShadowY hover:shadow-shadow',
-				'pushed-in':
-					'inset-shadow-current hover:inset-shadow-[0px_0px_3px] active:bg-primary-soft/80 active:[&_span]:scale-94 active:shadow-[inset_0_0_10px_2px_color-mix(in_oklch,currentColor_30%,transparent),inset_0_4px_8px_-2px_color-mix(in_oklch,currentColor_35%,transparent)]',
 			},
 		},
 		defaultVariants: {
 			variant: 'primary',
-			vibe: 'elevated',
+			vibe: 'elevated-reverse',
 		},
 	},
 );
@@ -49,7 +47,7 @@ function Button(props: ButtonProps) {
 	const mergedProps = mergeProps(
 		{
 			variant: 'primary' as const,
-			vibe: 'elevated' as const,
+			vibe: 'elevated-reverse' as const,
 			focusableWhenDisabled: false,
 			nativeButton: true,
 			type: 'button' as const,
