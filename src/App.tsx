@@ -1,4 +1,4 @@
-import { Code, Moon, Siren, Sun } from 'lucide-solid';
+import { Code, Copy, FileText, Moon, Siren, Sun, X } from 'lucide-solid';
 import type { JSX } from 'solid-js';
 import { For, Show, createEffect, createMemo, createSignal, onCleanup, onMount } from 'solid-js';
 import { ColorEditor } from './components/ColorEditor';
@@ -252,82 +252,96 @@ export default function App() {
 
 	return (
 		<div class="flex h-screen min-h-screen flex-col overflow-hidden bg-background text-foreground">
-			<header class="flex h-10 shrink-0 items-center justify-between border-b border-border bg-primary px-3 md:px-4">
-				<div class="flex items-center gap-3">
-					<Button
-						variant={input() ? 'primary' : 'tertiary'}
-						onClick={() => {
-							if (input()) {
-								handleInputClear();
-							} else {
-								handleSample();
-							}
-						}}
-					>
-						{input() ? 'Clear' : 'Load sample'}
-					</Button>
+			<header class="flex h-10 shrink-0 items-center gap-2 border-b border-border bg-primary px-3 md:px-4">
+				{/* Output format select */}
+				<Select
+					value={outputFormat()}
+					items={outputSelectItems()}
+					onValueChange={(value) => {
+						if (typeof value === 'string' && isOutputFormatId(value)) {
+							setOutputFormat(value);
+						}
+					}}
+				>
+					<SelectTrigger class="select-none">
+						<SelectValue />
+					</SelectTrigger>
+					<SelectContent>
+						<For each={outputFormatOptions}>
+							{(option) => <SelectItem value={option.id}>{option.label}</SelectItem>}
+						</For>
+					</SelectContent>
+				</Select>
 
-					<Show when={outputValue()}>
-						<Button
-							variant="primary"
-							class={cn(copied() && 'text-accent hover:text-accent')}
-							onClick={handleCopy}
-						>
-							{copied() ? 'Copied!' : 'Copy'}
-						</Button>
-					</Show>
-				</div>
-				<div class=" flex items-center gap-3">
-					<div class="flex items-center gap-2">
-						<Tooltip>
-							<TooltipTrigger
-								render={(p) => (
-									<Switch
-										{...p}
-										checked={isDark()}
-										onCheckedChange={setIsDark}
-										aria-label={`Switch to ${isDark() ? 'light' : 'dark'} theme`}
-										class={cn(
-											p.class,
-											'data-unchecked:text-secondary data-unchecked:bg-secondary',
-											'data-checked:text-darkblue data-checked:border-darkblue/20 data-checked:bg-darkblue',
-										)}
-										icons={{
-											on: <Moon size={12} />,
-											off: <Sun size={12} class="stroke-3" />,
-										}}
-									/>
-								)}
-							/>
+				{/* Load sample */}
+				<Button variant="secondary" onClick={handleSample}>
+					<FileText size={12} />
+					sample
+				</Button>
 
-							<TooltipContent>Switch to {isDark() ? 'light' : 'dark'} theme</TooltipContent>
-						</Tooltip>
-					</div>
+				{/* Clear input */}
+				<Button variant="tertiary" onClick={handleInputClear} disabled={!input()}>
+					<X size={12} />
+				</Button>
 
-					<Separator orientation="vertical" />
+				{/* Copy output */}
+				<Button
+					variant="primary"
+					class={cn(copied() && 'text-accent hover:text-accent')}
+					onClick={handleCopy}
+					disabled={!outputValue()}
+				>
+					<Copy size={12} />
+					{copied() ? 'Copied!' : 'copy'}
+				</Button>
 
-					<div class="flex items-center gap-2">
-						<Tooltip>
-							<TooltipTrigger
-								render={(p) => (
-									<Switch
-										{...p}
-										checked={showChips()}
-										onCheckedChange={(checked) => setShowChips(checked)}
-										aria-label={showChips() ? 'Do not highlight colors' : 'Highlight colors'}
-										class={cn(p.class, 'data-unchecked:bg-slate-700')}
-										icons={{
-											on: <HighlightIcon state="on" width={12} height={12} />,
-											off: <HighlightIcon state="off" width={12} height={12} />,
-										}}
-									/>
-								)}
-							/>
-							<TooltipContent>
-								{showChips() ? 'Do not highlight colors' : 'Highlight colors'}
-							</TooltipContent>
-						</Tooltip>
-					</div>
+				{/* Right side */}
+				<div class="ml-auto flex items-center gap-2">
+					{/* Highlight colors toggle */}
+					<Tooltip>
+						<TooltipTrigger
+							render={(p) => (
+								<Switch
+									{...p}
+									checked={showChips()}
+									onCheckedChange={setShowChips}
+									aria-label={showChips() ? 'Do not highlight colors' : 'Highlight colors'}
+									class={cn(p.class, 'data-unchecked:bg-slate-700')}
+									icons={{
+										on: <HighlightIcon state="on" width={12} height={12} />,
+										off: <HighlightIcon state="off" width={12} height={12} />,
+									}}
+								/>
+							)}
+						/>
+						<TooltipContent>
+							{showChips() ? 'Do not highlight colors' : 'Highlight colors'}
+						</TooltipContent>
+					</Tooltip>
+
+					{/* Dark / light mode toggle */}
+					<Tooltip>
+						<TooltipTrigger
+							render={(p) => (
+								<Switch
+									{...p}
+									checked={isDark()}
+									onCheckedChange={setIsDark}
+									aria-label={`Switch to ${isDark() ? 'light' : 'dark'} theme`}
+									class={cn(
+										p.class,
+										'data-unchecked:text-secondary data-unchecked:bg-secondary',
+										'data-checked:text-darkblue data-checked:border-darkblue/20 data-checked:bg-darkblue',
+									)}
+									icons={{
+										on: <Moon size={12} />,
+										off: <Sun size={12} class="stroke-3" />,
+									}}
+								/>
+							)}
+						/>
+						<TooltipContent>Switch to {isDark() ? 'light' : 'dark'} theme</TooltipContent>
+					</Tooltip>
 				</div>
 			</header>
 
@@ -393,26 +407,6 @@ export default function App() {
 						class="relative flex flex-1 overflow-auto"
 						onScroll={handleOutputContainerScroll}
 					>
-						<div class="absolute top-1 right-3 z-1">
-							<Select
-								value={outputFormat()}
-								items={outputSelectItems()}
-								onValueChange={(value) => {
-									if (typeof value === 'string' && isOutputFormatId(value)) {
-										setOutputFormat(value);
-									}
-								}}
-							>
-								<SelectTrigger class="select-none">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<For each={outputFormatOptions}>
-										{(option) => <SelectItem value={option.id}>{option.label}</SelectItem>}
-									</For>
-								</SelectContent>
-							</Select>
-						</div>
 						<Show
 							when={state().status === 'valid' && outputValue()}
 							fallback={

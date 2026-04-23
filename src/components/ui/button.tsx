@@ -32,7 +32,7 @@ const buttonVariants = cva(
 		},
 		defaultVariants: {
 			variant: 'primary',
-			vibe: 'elevated-reverse',
+			vibe: 'elevated',
 		},
 	},
 );
@@ -47,7 +47,7 @@ function Button(props: ButtonProps) {
 	const mergedProps = mergeProps(
 		{
 			variant: 'primary' as const,
-			vibe: 'elevated-reverse' as const,
+			vibe: 'elevated' as const,
 			focusableWhenDisabled: false,
 			nativeButton: true,
 			type: 'button' as const,
