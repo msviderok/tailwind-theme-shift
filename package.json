@@ -34,6 +34,7 @@
 		"knip": "^6.6.0",
 		"tailwindcss": "^4.2.4",
 		"typescript": "link:pnpm:@typescript/typescript6@^6.0.0",
+		"vite-plugin-pwa": "^1.2.0",
 		"vite-plugin-solid": "^2.11.12"
 	},
 	"packageManager": "pnpm@10.33.0"
